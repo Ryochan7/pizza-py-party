@@ -1,0 +1,11 @@
+# Sample batch ordering file
+# Each order will be seperated by a new line and will be
+# formatted the same way as a single command line pizza order.
+# You can comment any lines that you would like skipped.
+
+# Orders 1 large, thin pizza with pepperoni and mushrooms
+-pm 1 large thin
+
+# Orders 2 medium, handtoss pizzas with pepperoni
+-p 2 medium handtoss
+

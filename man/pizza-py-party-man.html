@@ -1,0 +1,242 @@
+Content-type: text/html
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML><HEAD><TITLE>Man page of Pizza-Py-Party</TITLE>
+</HEAD><BODY>
+<H1>Pizza-Py-Party</H1>
+Section: User Commands  (1)<BR>Updated: 2009-01-19<BR><A HREF="#index">Index</A>
+<A HREF="../index.html">Return to Main Contents</A><HR>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+pizza-py-party - a command line program for ordering pizza.
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<B>pizza-py-party</B>
+
+[OPTIONS]
+
+[TOPPINGS]
+
+[QUANTITY]
+
+[SIZE]
+
+[CRUST]
+
+<P>
+
+QUANTITY can be between 1 and 5. No more than 10 pizzas can be ordered.
+<BR>
+
+SIZE can be: small, medium, large, or x-large.
+<BR>
+
+Note: small is not available for deepdish or brooklyn.
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;medium&nbsp;is&nbsp;not&nbsp;available&nbsp;for&nbsp;brooklyn
+<BR>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x-large&nbsp;is&nbsp;not&nbsp;available&nbsp;for&nbsp;deepdish,&nbsp;thin.
+<BR>
+
+CRUST can be: handtoss, deepdish, thin, or brooklyn.
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+<B>pizza-py-party</B>
+
+provides a command line interface for ordering pizza from the Domino's Pizza website.
+<A NAME="lbAE">&nbsp;</A>
+<H2>DIRECTIONS</H2>
+
+You will first need to go to <A HREF="http://www.dominos.com">www.dominos.com</A> and sign up for 
+an account. Then use your user name and password in the .pizza-py-party.conf
+file, or in your command line request.
+<A NAME="lbAF">&nbsp;</A>
+<H2>OPTIONS</H2>
+
+<DL COMPACT>
+<DT><B>-U,&nbsp;--username&nbsp;</B>&lt;USERNAME&gt;
+
+<DD>
+Specify the user name for your Domino's account.
+<DT><B>-P,&nbsp;--password&nbsp;</B>&lt;PASSWORD&gt;
+
+<DD>
+Specify the password for your Domino's account.
+<DT><B>-O,&nbsp;--coupon&nbsp;</B>&lt;ID#&nbsp;|&nbsp;x&gt;
+
+<DD>
+Choose an online coupon to apply to the order or choose x to see the current coupon
+menu.
+<DT><B>-F,&nbsp;--force</B>
+
+<DD>
+Complete the order without asking for user confirmation.
+<DT><B>-I,&nbsp;--input-file&nbsp;</B>&lt;BATCHFILE&gt;
+
+<DD>
+Read pizza orders from a batch file.  This batch file will be formatted the same way as your single command line pizza orders except each order will be separated by a new line.
+<DT><B>-H,&nbsp;--help</B>
+
+<DD>
+Display the help menu.
+<P>
+</DL>
+<A NAME="lbAG">&nbsp;</A>
+<H2>TOPPINGS</H2>
+
+Here is a list of the toppings that are available from Domino's for your pizza order:
+<DL COMPACT>
+<DT><B>-p,&nbsp;--pepperoni</B>
+
+<DD>
+Order your pizza with pepperoni.
+<DT><B>-x,&nbsp;--xlarge-pepperoni</B>
+
+<DD>
+Order your pizza with extra large pepperoni.
+<DT><B>-i,&nbsp;--italian-sausage </B>
+
+<DD>
+Order your pizza with Italian sausage.
+<DT><B>-b,&nbsp;--beef</B>
+
+<DD>
+Order your pizza with beef.
+<DT><B>-h,&nbsp;--ham</B>
+
+<DD>
+Order your pizza with ham.
+<DT><B>-c,&nbsp;--bacon</B>
+
+<DD>
+Order your pizza with bacon.
+<DT><B>-k,&nbsp;--chicken</B>
+
+<DD>
+Order your pizza with chicken.
+<DT><B>-s,&nbsp;--philly-steak</B>
+
+<DD>
+Order your pizza with Philly steak.
+<DT><B>-g,&nbsp;--green-peppers</B>
+
+<DD>
+Order your pizza with green peppers.
+<DT><B>-e,&nbsp;--black-olives</B>
+
+<DD>
+Order your pizza with black olives.
+<DT><B>-a,&nbsp;--pineapple</B>
+
+<DD>
+Order your pizza with pineapple.
+<DT><B>-m,&nbsp;--mushrooms</B>
+
+<DD>
+Order your pizza with mushrooms.
+<DT><B>-o,&nbsp;--onions</B>
+
+<DD>
+Order your pizza with onions.
+<DT><B>-j,&nbsp;--jalapeno-peppers</B>
+
+<DD>
+Order your pizza with Jalapeno peppers.
+<DT><B>-j,&nbsp;--banana-peppers</B>
+
+<DD>
+Order your pizza with banana peppers.
+<DT><B>-d,&nbsp;--cheedar-cheese</B>
+
+<DD>
+Order your pizza with cheedar cheese.
+<DT><B>-n,&nbsp;--provolone-cheese</B>
+
+<DD>
+Order your pizza with Provolone cheese.
+<DT><B>-v,&nbsp;--green-olives</B>
+
+<DD>
+Order your pizza with green olives.
+<DT><B>-r,&nbsp;--tomatoes</B>
+
+<DD>
+Order your pizza with diced tomatoes.
+<P>
+</DL>
+<A NAME="lbAH">&nbsp;</A>
+<H2>USAGE</H2>
+
+<DL COMPACT>
+<DT>pizza-py-party -pdc 3 medium handtoss<DD>
+<DT>Orders 3 medium, handtoss pizzas with pepperoni, cheedar cheese, and bacon.<DD>
+<P>
+</DL>
+<A NAME="lbAI">&nbsp;</A>
+<H2>CONF FILE: .pizza-py-party.conf</H2>
+
+<DL COMPACT>
+<DT>To be placed in your home directory, this file can contain all your default information.  A typical format would look like...<DD>
+<P>
+username=rtm
+<BR>
+
+password=simple
+<BR>
+
+default_quantity=3
+<BR>
+
+default_size=medium
+<BR>
+
+default_crust=deepdish
+<BR>
+
+default_toppings=pepperoni cheedar-cheese
+</DL>
+<P>
+
+Note: default_toppings must have the long hand version of the command-line
+arguments for the topping names
+<P>
+<A NAME="lbAJ">&nbsp;</A>
+<H2>CREDITS</H2>
+
+Mad props go to Cory Arcangel (<A HREF="mailto:cory@post-data.org">cory@post-data.org</A>) and Michael Frumin (mfrumin AT eyebeam DOT org)
+for making the original program, Pizza Party, that inspired this program.
+Their code was a great reference for this program and the documentation of
+this program is mainly taken from Pizza Party. You can find information about
+Pizza Party at
+
+<A HREF="http://www.beigerecords.com/cory/pizza_party/">http://www.beigerecords.com/cory/pizza_party/</A>
+<P>
+<A NAME="lbAK">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+Travis Nickles &lt;<A HREF="mailto:ryoohki7@yahoo.com">ryoohki7@yahoo.com</A>&gt;.
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">DIRECTIONS</A><DD>
+<DT><A HREF="#lbAF">OPTIONS</A><DD>
+<DT><A HREF="#lbAG">TOPPINGS</A><DD>
+<DT><A HREF="#lbAH">USAGE</A><DD>
+<DT><A HREF="#lbAI">CONF FILE: .pizza-py-party.conf</A><DD>
+<DT><A HREF="#lbAJ">CREDITS</A><DD>
+<DT><A HREF="#lbAK">AUTHOR</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 08:35:11 GMT, January 19, 2009
+</BODY>
+</HTML>

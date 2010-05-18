@@ -1,0 +1,144 @@
+.TH Pizza-Py-Party 1 "2009-01-19" "Pizza Py Party"
+.SH NAME
+pizza-py-party \- a command line program for ordering pizza.
+.SH SYNOPSIS
+.B pizza-py-party
+.RB [OPTIONS]
+.RB [TOPPINGS]
+.RB [QUANTITY]
+.RB [SIZE]
+.RB [CRUST]
+.P
+QUANTITY can be between 1 and 5. No more than 10 pizzas can be ordered.
+.br
+SIZE can be: small, medium, large, or x-large.
+.br
+Note: small is not available for deepdish or brooklyn.
+      medium is not available for brooklyn
+      x-large is not available for deepdish, thin.
+.br
+CRUST can be: handtoss, deepdish, thin, or brooklyn.
+.SH "DESCRIPTION"
+.BR pizza-py-party
+provides a command line interface for ordering pizza from the Domino's Pizza website.
+.SH DIRECTIONS
+You will first need to go to www.dominos.com and sign up for 
+an account. Then use your user name and password in the .pizza-py-party.conf
+file, or in your command line request.
+.SH OPTIONS
+.TP
+.BR \-U,\ \-\-username\   <USERNAME>
+Specify the user name for your Domino's account.
+.TP
+.BR \-P,\ \-\-password\   <PASSWORD>
+Specify the password for your Domino's account.
+.TP
+.BR \-O,\ \-\-coupon\      <ID#\ |\ x>
+Choose an online coupon to apply to the order or choose x to see the current coupon
+menu.
+.TP
+.BR \-F,\ \-\-force
+Complete the order without asking for user confirmation.
+.TP
+.BR \-I,\ \-\-input-file\   <BATCHFILE>
+Read pizza orders from a batch file.  This batch file will be formatted the same way as your single command line pizza orders except each order will be separated by a new line.
+.TP
+.BR \-H,\ \-\-help
+Display the help menu.
+
+.SH TOPPINGS
+Here is a list of the toppings that are available from Domino's for your pizza order:
+.TP
+.B \-p,\ \-\-pepperoni
+Order your pizza with pepperoni.
+.TP
+.B \-x,\ \-\-xlarge-pepperoni
+Order your pizza with extra large pepperoni.
+.TP
+.B \-i,\ \-\-italian-sausage 
+Order your pizza with Italian sausage.
+.TP
+.B \-b,\ \-\-beef
+Order your pizza with beef.
+.TP
+.B \-h,\ \-\-ham
+Order your pizza with ham.
+.TP
+.B \-c,\ \-\-bacon
+Order your pizza with bacon.
+.TP
+.B \-k,\ \-\-chicken
+Order your pizza with chicken.
+.TP
+.B \-s,\ \-\-philly-steak
+Order your pizza with Philly steak.
+.TP
+.B \-g,\ \-\-green-peppers
+Order your pizza with green peppers.
+.TP
+.B \-e,\ \-\-black-olives
+Order your pizza with black olives.
+.TP
+.B \-a,\ \-\-pineapple
+Order your pizza with pineapple.
+.TP
+.B \-m,\ \-\-mushrooms
+Order your pizza with mushrooms.
+.TP
+.B \-o,\ \-\-onions
+Order your pizza with onions.
+.TP
+.B \-j,\ \-\-jalapeno-peppers
+Order your pizza with Jalapeno peppers.
+.TP
+.B \-j,\ \-\-banana-peppers
+Order your pizza with banana peppers.
+.TP
+.B \-d,\ \-\-cheedar-cheese
+Order your pizza with cheedar cheese.
+.TP
+.B \-n,\ \-\-provolone-cheese
+Order your pizza with Provolone cheese.
+.TP
+.B \-v,\ \-\-green-olives
+Order your pizza with green olives.
+.TP
+.B \-r,\ \-\-tomatoes
+Order your pizza with diced tomatoes.
+
+.SH USAGE
+.TP
+pizza-py-party -pdc 3 medium handtoss
+.TP
+Orders 3 medium, handtoss pizzas with pepperoni, cheedar cheese, and bacon.
+
+.SH CONF FILE: .pizza-py-party.conf
+.TP
+To be placed in your home directory, this file can contain all your default information.  A typical format would look like...
+
+username=rtm
+.br
+password=simple
+.br
+default_quantity=3
+.br
+default_size=medium
+.br
+default_crust=deepdish
+.br
+default_toppings=pepperoni cheedar-cheese
+.P
+Note: default_toppings must have the long hand version of the command-line
+arguments for the topping names
+
+.SH CREDITS
+Mad props go to Cory Arcangel (cory@post-data.org) and Michael Frumin (mfrumin AT eyebeam DOT org)
+for making the original program, Pizza Party, that inspired this program.
+Their code was a great reference for this program and the documentation of
+this program is mainly taken from Pizza Party. You can find information about
+Pizza Party at
+.RE 1
+http://www.beigerecords.com/cory/pizza_party/
+
+.SH AUTHOR
+Travis Nickles <ryoohki7@yahoo.com>.
