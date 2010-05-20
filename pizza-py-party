@@ -63,11 +63,22 @@ toppings = ['p', 'x', 'i', 'b', 'h', 'c', 'k', 's',
 ####                           ####
 ###################################
 
+#topping[code]: code will specify if a topping is selected
+#toppingSide[code]: W - Whole Pizza
+#                   1 - Left Side Only
+#                   2 - Right Side Only
+#                   Will only allow on whole pizza for the time being
+#toppingAmount[code]:  1 - Normal
+#                     .5 - Light
+#                    1.5 - Extra
+#                    Will only allow normal amount of topping
+
 
 #### CHEESE & SAUCE ####
-#toppingCHEESE: toppingC: toppingSideC: toppingAmountC: Cheese
+#toppingCHEESE:  Cheese (Irrelevant. Use toppingC)
+#toppingC: toppingSideC: toppingAmountC: Cheese
 #### Side seems irrelevant when it comes to sauce
-#toppingSAUCE: toppingAmountSAUCE: Sauce
+#toppingSAUCE: toppingAmountSAUCE: Sauce (Irrelevant. Use specific sauce topping)
 #toppingX: toppingSideX: toppingAmountX: New Robust Tomato Sauce
 #toppingXw: toppingSideXw: toppingAmountXw: White Sauce
 #toppingXm: toppingSideXm: toppingAmountXm: Hearty Marinara Sauce
