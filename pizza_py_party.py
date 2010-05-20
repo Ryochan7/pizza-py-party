@@ -52,7 +52,7 @@ USER_AGENT = {'User-agent' : 'PizzaPyParty/%s' % VERSION_NUM}
 # Lists with default pizza attributes. Used when parsing pizza options passed
 sizes = ("small", "medium", "large", "x-large")
 crusts = ("handtoss", "deepdish", "thin", "brooklyn")
-#TOPPING_CHEESE, TOPPPING_SAUSE = ("toppingC", "toppingSAUCE")
+#TOPPING_CHEESE, TOPPPING_SAUSE = ("toppingC", "toppingX")
 TOPPING_CHEESE, TOPPPING_SAUSE = ("topping-#-C-#-", "topping-#-X-#-")
 toppings = ['p', 'x', 'i', 'b', 'h', 'c', 'k', 's',
     'g', 'l', 'a', 'm', 'o', 'j', 'e', 'd', 'n', 'v', 't']
@@ -63,12 +63,12 @@ toppings = ['p', 'x', 'i', 'b', 'h', 'c', 'k', 's',
 ####                           ####
 ###################################
 
-#topping[code]: code will specify if a topping is selected
-#toppingSide[code]: W - Whole Pizza
+#topping(code): code will specify if a topping is selected
+#toppingSide(code): W - Whole Pizza
 #                   1 - Left Side Only
 #                   2 - Right Side Only
 #                   Will only allow on whole pizza for the time being
-#toppingAmount[code]:  1 - Normal
+#toppingAmount(code):  1 - Normal
 #                     .5 - Light
 #                    1.5 - Extra
 #                    Will only allow normal amount of topping
@@ -183,7 +183,7 @@ del toppings_cryptic
 del help_text
 
 # Dictionary used for pizza
-default_pizza = {}.fromkeys (toppings_long, ['N', '1'])
+default_pizza = {}.fromkeys (toppings_long, ['', '1'])
 default_pizza.update ({'crust': 'HANDTOSS'})
 default_pizza.update ({'size': '10'})
 default_pizza.update ({'quantity': '1'})
@@ -193,8 +193,8 @@ default_pizza.update ({'sauce': ['W', '1']})
 
 # Set the minimum and maximum amount of pizzas that can be ordered
 MIN_QTY = 1
-MAX_QTY = 5
-MAX_TOTAL_QTY = 10
+MAX_QTY = 25
+MAX_TOTAL_QTY = 25
 ORDERED_PIZZAS = 0
 
 
@@ -355,6 +355,7 @@ class ParseCoupons (htmllib.HTMLParser):
         f = formatter.NullFormatter ()
         htmllib.HTMLParser.__init__ (self, f, verbose)
         self.in_coupon_menu = False
+        self.in_ul = False
         self.getcoupon = False
         self.id = ""
         self.description = ""
@@ -372,9 +373,6 @@ class ParseCoupons (htmllib.HTMLParser):
             elif item == "class" and value == "coupon-price" and self.in_coupon_menu:
                 self.save_bgn ()
                 self.type = "coupon-price"
-            # Found an irrelevant div tag
-            elif item == "style" and self.in_coupon_menu:
-                self.type = "inner-div"
 
 
     def end_div (self):
@@ -387,26 +385,35 @@ class ParseCoupons (htmllib.HTMLParser):
             text = self.save_end ()
             self.price = text.decode ("utf8", "ignore")
             self.type = ""
-        # Ignore an irrelevant div tag
-        elif self.type == "inner-div":
-            self.type = ""
-        # Coupon list is complete
-        else:
-            self.in_coupon_menu = False
 
-
-    def start_li (self, attrs):
+    def start_ul (self, attrs):
         # If working outside of main coupon display, ignore
         if not self.in_coupon_menu:
             return
 
+        # Note beginning of coupon list
+        self.in_ul = True
+
+    def end_ul (self):
+        if self.in_ul:
+            # At end of coupon list
+            self.in_coupon_menu = False
+            self.in_ul = False
+
+
+    def start_li (self, attrs):
+        # If working outside of main coupon display, ignore
+        if not self.in_coupon_menu or not self.in_ul:
+            return
+
         for item, value in attrs:
-            if item == "class" and value == "coupon-item":
+            if item == "class" and value == "coupon-item" or value == "coupon-item first-item":
                 self.getcoupon = True # Only set True when in "menutype seeall" div scope
 
 
     def end_li (self):
         if self.getcoupon:
+            # End of coupon entry
             self.getcoupon = False
 
 
@@ -449,6 +456,7 @@ class Parser (htmllib.HTMLParser):
         self.getform = False
         self.select_name = None
         self.option_value = None
+        self.form_action = None
         self.formdata = {}
 
 
@@ -456,7 +464,13 @@ class Parser (htmllib.HTMLParser):
         for item, value in attrs:
             if item == "id" and value == self.form_id:
                 self.getform = True
-                return
+                #return
+            elif item == "action":
+                self.form_action = value
+
+        if self.getform and self.form_action:
+            return
+
         self.getform = False
 
 
@@ -557,7 +571,10 @@ def getPage (url, data=None):
 def getFormData (scan_page, target_form):
     """ Calls the main Parser class to obtain the form data of a page """
     parsed_form = Parser (target_form)
-    parsed_form.feed (scan_page)
+    try:
+        parsed_form.feed (scan_page)
+    except Exception:
+        dumpPage (scan_page)
     parsed_form.close ()
 #    print parsed_form.formdata
     return parsed_form.formdata
@@ -794,7 +811,7 @@ def submitFinalOrder (current_page, total, check_force):
         # the order is complete. Comment the getPage line below if you want
         # to test the entire program, including this function,
         # without submitting the final order
-        newpage = getPage (SUBMIT_ORDER_URL, formdata)
+        #newpage = getPage (SUBMIT_ORDER_URL, formdata)
         return True
     elif choice.lower () == 'n' or choice.lower () == 'no':
         return False
@@ -942,15 +959,20 @@ def displayHelp ():
 
 def getCouponsPage (current_page):
     """ Gets the coupon page """
-    formdata = getFormData (current_page, "startOrder")
+    formdata = getFormData (current_page, "choose_pizza")
 
-    setFormField (formdata, 'startOrder:_idcl', 'startOrder:formSubmitLink')
-    setFormField (formdata, 'goTo', 'COUPONS')
+    setFormField (formdata, 'choose_pizza:_idcl', 'choose_pizza:couponsButton')
+    #setFormField (formdata, 'goTo', 'COUPONS')
+
+    #setFormField (formdata, 'startOrder:_idcl', 'startOrder:formSubmitLink')
+    #setFormField (formdata, 'goTo', 'COUPONS')
     # Needed for me since no Domino's store delivers to me
-#   setFormField (formdata, 'startOrder:deliveryOrPickup', 'Pickup')
+    #setFormField (formdata, 'startOrder:deliveryOrPickup', 'Pickup')
 
-    newpage = getPage (COUPON_PAGE_URL, formdata)
+#    newpage = getPage (COUPON_PAGE_URL, formdata)
+    newpage = getPage (ADD_COUPON_URL, formdata)
     storeClosed (newpage)
+    dumpPage (newpage)
     return newpage
 
 def getAvailableCoupons (current_page):
