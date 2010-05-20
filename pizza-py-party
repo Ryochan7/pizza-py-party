@@ -23,6 +23,8 @@ urllib2.install_opener (opener)
 # There are lots of them.
 # Change in pages are dependent on the post data passed
 # (via the goTo or _idcl variable depending on the page and method)
+# TODO (ryochan7): Get rid of all non-essential urls. Grab urls from the action
+#                  attribute in forms
 LOGIN_URL = "https://www01.order.dominos.com/olo/faces/login/login.jsp"
 CHOOSE_PIZZA_URL = "https://www01.order.dominos.com/olo/faces/order/step1_start_order.jsp"
 COUPON_PAGE_URL = CHOOSE_PIZZA_URL
@@ -46,12 +48,62 @@ LOGOUT_URL = "http://www01.order.dominos.com/olo/servlet/init_servlet?target=log
 VERSION_NUM = "0.2.2"
 USER_AGENT = {'User-agent' : 'PizzaPyParty/%s' % VERSION_NUM}
 
+# TODO (ryochan7): Organize toppings data strutures in a better manner
 # Lists with default pizza attributes. Used when parsing pizza options passed
 sizes = ("small", "medium", "large", "x-large")
 crusts = ("handtoss", "deepdish", "thin", "brooklyn")
+#TOPPING_CHEESE, TOPPPING_SAUSE = ("toppingC", "toppingSAUCE")
 TOPPING_CHEESE, TOPPPING_SAUSE = ("topping-#-C-#-", "topping-#-X-#-")
 toppings = ['p', 'x', 'i', 'b', 'h', 'c', 'k', 's',
     'g', 'l', 'a', 'm', 'o', 'j', 'e', 'd', 'n', 'v', 't']
+
+###################################
+####                           ####
+####     Topping info          ####
+####                           ####
+###################################
+
+
+#### CHEESE & SAUCE ####
+#toppingCHEESE: toppingC: toppingSideC: toppingAmountC: Cheese
+#### Side seems irrelevant when it comes to sauce
+#toppingSAUCE: toppingAmountSAUCE: Sauce
+#toppingX: toppingSideX: toppingAmountX: New Robust Tomato Sauce
+#toppingXw: toppingSideXw: toppingAmountXw: White Sauce
+#toppingXm: toppingSideXm: toppingAmountXm: Hearty Marinara Sauce
+#toppingBq: toppingSideBq: toppingAmountBq: BBQ Sauce
+
+#### MEATS ####
+#toppingP: toppingSideP: toppingAmountP: Pepperoni: 
+#toppingPl: toppingSidePl: toppingAmountPl: Extra Large Pepperoni
+#toppingSb: toppingSideSb: toppingAmountSb: Sliced Italian Sausage
+#toppingS: toppingSideS: toppingAmountS: Italian Sausage
+#toppingB: toppingSideB: toppingAmountB: Beef
+#toppingH: toppingSideH: toppingAmountH: Ham
+#toppingK: toppingSideK: toppingAmountK: Bacon
+#toppingDu: toppingSideDu: toppingAmountDu: Premium Chicken
+#toppingSa: toppingSideSa: toppingAmountSa: Salami
+#toppingPm: toppingSidePm: toppingAmountPm: Philly Steak
+
+#### UNMEATS ####
+#toppingG: toppingSideG: toppingAmountG: Green Peppers
+#toppingR: toppingSideR: toppingAmountR: Black Olives
+#toppingN: toppingSideN: toppingAmountN: Pineapple
+#toppingM: toppingSideM: toppingAmountM: Mushrooms
+#toppingO: toppingSideO: toppingAmountO: Onions
+#toppingJ: toppingSideJ: toppingAmountJ: Jalapeno Peppers
+#toppingZ: toppingSideZ: toppingAmountZ: Banana Peppers
+#toppingSi: toppingSideSi: toppingAmountSi: Spinach
+#toppingRr: toppingSideRr: toppingAmountRr: Roasted Red Peppers
+#toppingE: toppingSideE: toppingAmountE: Cheddar Cheese
+#toppingCp: toppingSideCp: toppingAmountCp: Shredded Provolone Cheese
+#toppingCs: toppingSideCs: toppingAmountCs: Shredded Parmesan
+#toppingFe: toppingSideFe: toppingAmountFe: Feta Cheese
+#toppingV: toppingSideV: toppingAmountV: Green Olives
+#toppingTd: toppingSideTd: toppingAmountTd: Diced Tomatoes
+#toppingHt: toppingSideHt: toppingAmountHt: Hot Sauce
+
+
 toppings_long = [
     "pepperoni",
     "xlarge-pepperoni",
@@ -586,8 +638,12 @@ def storeClosed (scan_page):
     return False
 
 def dumpPage (page):
+    page_out = None
     with open('dumped_page.html', 'w') as page_out:
         page_out.write(page)
+
+    if page_out:
+        page_out.close ()
 
 
 #####################################################################
@@ -634,7 +690,7 @@ def getPizzaPage (current_page):
     setFormField (formdata, 'startOrder:_idcl', 'startOrder:formSubmitLink')
     setFormField (formdata, 'goTo', 'NEXT')
     # Needed for me since no Domino's store delivers to me
-#   setFormField (formdata, 'startOrder:deliveryOrPickup', 'Pickup')
+    #setFormField (formdata, 'startOrder:deliveryOrPickup', 'Pickup')
 
     newpage = getPage (CHOOSE_PIZZA_URL, formdata)
     storeClosed (newpage)
