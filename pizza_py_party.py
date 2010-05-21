@@ -12,9 +12,7 @@ import formatter
 from urllib import urlencode
 from getpass import getpass
 
-# Some function aliases and set up cookie management
-urlopen = urllib2.urlopen
-Request = urllib2.Request
+# Set up cookie management
 cj = cookielib.LWPCookieJar ()
 opener = urllib2.build_opener (urllib2.HTTPCookieProcessor (cj))
 urllib2.install_opener (opener)
@@ -25,12 +23,11 @@ urllib2.install_opener (opener)
 # (via the goTo or _idcl variable depending on the page and method)
 # TODO (ryochan7): Get rid of all non-essential urls. Grab urls from the action
 #                  attribute in forms
-LOGIN_URL = "https://www01.order.dominos.com/olo/faces/login/login.jsp"
-CHOOSE_PIZZA_URL = "https://www01.order.dominos.com/olo/faces/order/step1_start_order.jsp"
-COUPON_PAGE_URL = CHOOSE_PIZZA_URL
-ADD_COUPON_URL = "https://www01.order.dominos.com/olo/faces/order/coupons.jsp"
-BUILD_PIZZA_URL = "https://www01.order.dominos.com/olo/faces/order/step2_choose_pizza.jsp"
-ADD_PIZZA_URL = "https://www01.order.dominos.com/olo/faces/order/step2_build_pizza.jsp"
+TEST_ROOT = "https://order.dominos.com"
+LOGIN_RELATIVE_URL = "/olo/faces/login/login.jsp"
+LOGIN_URL = urllib2.urlparse.urljoin (TEST_ROOT, LOGIN_RELATIVE_URL)
+#LOGIN_URL = "https://order.dominos.com/olo/faces/login/login.jsp"
+#LOGIN_URL = "https://www01.order.dominos.com/olo/faces/login/login.jsp"
 CALCULATE_TOTAL_URL = "https://www01.order.dominos.com/olo/servlet/ajax_servlet"
 CALCULATE_TOTAL_URL_POST_VARS = {
     "cmd": "priceOrder",
@@ -39,8 +36,6 @@ CALCULATE_TOTAL_URL_POST_VARS = {
     "runCouponPicker": "N",
     "runPriceOrder": "Y",
 }
-ADD_SIDES_URL = ADD_PIZZA_URL
-CHECKOUT_URL = "https://www01.order.dominos.com/olo/faces/order/step3_choose_drinks.jsp"
 SUBMIT_ORDER_URL = "https://www01.order.dominos.com/olo/faces/order/placeOrder.jsp"
 LOGOUT_URL = "http://www01.order.dominos.com/olo/servlet/init_servlet?target=logout"
 
@@ -52,8 +47,8 @@ USER_AGENT = {'User-agent' : 'PizzaPyParty/%s' % VERSION_NUM}
 # Lists with default pizza attributes. Used when parsing pizza options passed
 sizes = ("small", "medium", "large", "x-large")
 crusts = ("handtoss", "deepdish", "thin", "brooklyn")
-#TOPPING_CHEESE, TOPPPING_SAUSE = ("toppingC", "toppingX")
-TOPPING_CHEESE, TOPPPING_SAUSE = ("topping-#-C-#-", "topping-#-X-#-")
+TOPPING_CHEESE, TOPPPING_SAUSE = ("toppingC", "toppingX")
+#TOPPING_CHEESE, TOPPPING_SAUSE = ("topping-#-C-#-", "topping-#-X-#-")
 toppings = ['p', 'x', 'i', 'b', 'h', 'c', 'k', 's',
     'g', 'l', 'a', 'm', 'o', 'j', 'e', 'd', 'n', 'v', 't']
 
@@ -67,18 +62,18 @@ toppings = ['p', 'x', 'i', 'b', 'h', 'c', 'k', 's',
 #toppingSide(code): W - Whole Pizza
 #                   1 - Left Side Only
 #                   2 - Right Side Only
-#                   Will only allow on whole pizza for the time being
+#                   Program will only allow on whole pizza
 #toppingAmount(code):  1 - Normal
 #                     .5 - Light
 #                    1.5 - Extra
-#                    Will only allow normal amount of topping
+#                    Program only allow normal amount of topping
 
 
 #### CHEESE & SAUCE ####
 #toppingCHEESE:  Cheese (Irrelevant. Use toppingC)
 #toppingC: toppingSideC: toppingAmountC: Cheese
 #### Side seems irrelevant when it comes to sauce
-#toppingSAUCE: toppingAmountSAUCE: Sauce (Irrelevant. Use specific sauce topping)
+#toppingSAUCE: toppingAmountSAUCE: Sauce (Irrelevant. Use specific sauce topping. Default: toppingX)
 #toppingX: toppingSideX: toppingAmountX: New Robust Tomato Sauce
 #toppingXw: toppingSideXw: toppingAmountXw: White Sauce
 #toppingXm: toppingSideXm: toppingAmountXm: Hearty Marinara Sauce
@@ -206,7 +201,7 @@ ORDERED_PIZZAS = 0
 
 
 #TODO: ABSTRACT AND SPLIT CLASS, FIX RIGID LOGIC
-class Pizza:
+class Pizza (object):
 	def __init__ (self):
 		self.crust = ""
 		self.size = ""
@@ -349,6 +344,18 @@ command line parameters. Exiting."""
 			sys.exit (42)
 
 
+class BasicFormData (object):
+    def __init__ (self):
+        self.form_data = {}
+        self.form_action = None
+
+
+class CouponCodeData (object):
+    def __init__ (self):
+        self.form_data = []
+        self.form_action = None
+
+
 class ParseCoupons (htmllib.HTMLParser):
     """ Parser for the coupons page. Obtains all available coupon offers """
     def __init__(self, verbose=False):
@@ -361,9 +368,17 @@ class ParseCoupons (htmllib.HTMLParser):
         self.description = ""
         self.price = -1.0 # Arbitrary non-blank default value
         self.type = ""
-        self.formdata = []
+        self.form = CouponCodeData ()
         self.pattern = re.compile (r".*document\.forms\['couponsForm'\]\['couponCode'\]\.value='((?:_)?\d{4})'")
 
+
+    def start_form (self, attrs):
+        getaction = False
+        for item, value in attrs:
+            if item == "id" and value == "couponsForm":
+                getaction = True
+            elif item == "action" and getaction:
+                self.form.form_action = value
 
     def start_div (self, attrs):
         for item, value in attrs:
@@ -440,7 +455,7 @@ class ParseCoupons (htmllib.HTMLParser):
             return
 
         if self.id and self.description and self.price != -1.0:
-            self.formdata.append ((self.id, self.description, self.price))
+            self.form.form_data.append ((self.id, self.description, self.price))
         self.id = ""
         self.description = ""
         self.price = -1.0 # Arbitrary non-blank default value
@@ -456,8 +471,7 @@ class Parser (htmllib.HTMLParser):
         self.getform = False
         self.select_name = None
         self.option_value = None
-        self.form_action = None
-        self.formdata = {}
+        self.form = BasicFormData ()
 
 
     def do_form (self, attrs):
@@ -466,9 +480,9 @@ class Parser (htmllib.HTMLParser):
                 self.getform = True
                 #return
             elif item == "action":
-                self.form_action = value
+                self.form.form_action = value
 
-        if self.getform and self.form_action:
+        if self.getform and self.form.form_action:
             return
 
         self.getform = False
@@ -494,14 +508,14 @@ class Parser (htmllib.HTMLParser):
         if name and tmp_value != None:
             # Check if a radio field needs to be updated
             if radio_field and checked:
-                self.formdata.update ({name: tmp_value})
+                self.form.form_data.update ({name: tmp_value})
             # Update non-radio fields
             elif not radio_field:
-                self.formdata.update ({name: tmp_value})
+                self.form.form_data.update ({name: tmp_value})
         # Include any input with no specified value
         # (in some needed hidden fields). Ex. login:_idcl
         elif name:
-            self.formdata.update ({name: ""})
+            self.form.form_data.update ({name: tmp_value})
 
 
     def start_select (self, attrs):
@@ -540,7 +554,7 @@ class Parser (htmllib.HTMLParser):
             self.option_value = self.last_option_value
 
         if self.select_name and self.option_value:
-            self.formdata.update ({self.select_name: self.option_value})
+            self.form.form_data.update ({self.select_name: self.option_value})
 
         # Reset these.
         self.select_name = None
@@ -559,8 +573,8 @@ def getPage (url, data=None):
     if data != None:
         data = urlencode (data)
     try:
-        req = Request (url, data, USER_AGENT)
-        handle = urlopen (req)
+        req = urllib2.Request (url, data, USER_AGENT)
+        handle = urllib2.urlopen (req)
     except:
         raise Exception ("Could not get page %s." % url)
 
@@ -571,13 +585,13 @@ def getPage (url, data=None):
 def getFormData (scan_page, target_form):
     """ Calls the main Parser class to obtain the form data of a page """
     parsed_form = Parser (target_form)
-    try:
-        parsed_form.feed (scan_page)
-    except Exception:
-        dumpPage (scan_page)
+    #try:
+    parsed_form.feed (scan_page)
+    #except Exception:
+    #    dumpPage (scan_page)
     parsed_form.close ()
 #    print parsed_form.formdata
-    return parsed_form.formdata
+    return parsed_form.form
 
 
 def setFormField (current_data, name, new_value):
@@ -696,7 +710,8 @@ def getLoginInfo ():
 
 def Login (current_page, username, password):
     """ Login to the Domino's site """
-    formdata = getFormData (current_page, "login")
+    form = getFormData (current_page, "login")
+    formdata = form.form_data
 
     setFormField (formdata, 'login:usrName', username)
     setFormField (formdata, 'login:passwd', password)
@@ -704,37 +719,26 @@ def Login (current_page, username, password):
 
     print "Logging in as %s..." % username
 
-    newpage = getPage (LOGIN_URL, formdata)
+    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    newpage = getPage (next_url, formdata)
     checkLogin (newpage)
-    return newpage
-
-def getPizzaPage (current_page):
-    """ Gets the promo page
-
-    TODO(rnk): This page doesn't seem to exist for me.
-    """
-    formdata = getFormData (current_page, "startOrder")
-
-    setFormField (formdata, 'startOrder:_idcl', 'startOrder:formSubmitLink')
-    setFormField (formdata, 'goTo', 'NEXT')
-    # Needed for me since no Domino's store delivers to me
-    #setFormField (formdata, 'startOrder:deliveryOrPickup', 'Pickup')
-
-    newpage = getPage (CHOOSE_PIZZA_URL, formdata)
-    storeClosed (newpage)
     return newpage
 
 def startBuildPizza (current_page):
     """ Gets the page that holds the main form for specifying a pizza """
-    formdata = getFormData (current_page, "choose_pizza")
+    form = getFormData (current_page, "choose_pizza")
+    formdata = form.form_data
 
     setFormField (formdata, 'choose_pizza:_idcl', 'choose_pizza:goToBuildOwn')
-    newpage = getPage (BUILD_PIZZA_URL, formdata)
+    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    print next_url
+    newpage = getPage (next_url, formdata)
     return newpage
 
 def addPizza (current_page, pizza, check_coupon=''):
     """ Add the user's custom pizza onto the order """
-    formdata = getFormData (current_page, "build_own")
+    form = getFormData (current_page, "build_own")
+    formdata = form.form_data
 
     # Delete any unknown toppings
     formdata_temp = formdata.copy ()
@@ -766,7 +770,10 @@ def addPizza (current_page, pizza, check_coupon=''):
     setFormField (formdata, "build_own:_idcl", "build_own:doAdd")
 #    print formdata
 
-    newpage = getPage (ADD_PIZZA_URL, formdata)
+#    newpage = getPage (ADD_PIZZA_URL, formdata)
+    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    print next_url
+    newpage = getPage (next_url, formdata)
     return newpage
 
 def calculateTotal ():
@@ -780,20 +787,28 @@ def calculateTotal ():
 
 def getSidesPage (current_page, check_coupon=''):
     """ Gets the sides page """
-    formdata = getFormData (current_page, "build_own")
+    form = getFormData (current_page, "build_own")
+    formdata = form.form_data
 
-    setFormField (formdata, 'build_own:_idcl', 'build_own:tab3')
+    setFormField (formdata, 'build_own:_idcl', 'build_own:navSidesLink')
 #    print formdata
 
-    newpage = getPage (ADD_SIDES_URL, formdata)
+#    newpage = getPage (ADD_SIDES_URL, formdata)
+    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    print next_url
+    newpage = getPage (next_url, formdata)
     return newpage
 
 def getConfirmationPage (current_page):
     """ Gets the confirmation page """
-    formdata = getFormData (current_page, "orderSummaryForm")
+    form = getFormData (current_page, "orderSummaryForm")
+    formdata = form.form_data
 
     setFormField (formdata, 'orderSummaryForm:_idcl', 'orderSummaryForm:osCheckout')
-    newpage = getPage (CHECKOUT_URL, formdata)
+    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    print next_url
+    newpage = getPage (next_url, formdata)
+    #newpage = getPage (CHECKOUT_URL, formdata)
     return newpage
 
 def submitFinalOrder (current_page, total, check_force):
@@ -803,7 +818,8 @@ def submitFinalOrder (current_page, total, check_force):
         print "Confirmation: order for %s (y|yes|n|no)?" % (total),
         choice = raw_input ()
     if check_force or choice.lower () == 'y' or choice.lower () == 'yes':
-        formdata = getFormData (current_page, "pricingEnabled")
+        form= getFormData (current_page, "pricingEnabled")
+        formdata = form.form_data
         setFormField (formdata, 'pricingEnabled:_idcl', 'pricingEnabled:placeOrdeLinkHIDDEN')
 
         print "Checking out for your order of %s..." % total
@@ -959,20 +975,16 @@ def displayHelp ():
 
 def getCouponsPage (current_page):
     """ Gets the coupon page """
-    formdata = getFormData (current_page, "choose_pizza")
+    form = getFormData (current_page, "choose_pizza")
+    formdata = form.form_data
 
     setFormField (formdata, 'choose_pizza:_idcl', 'choose_pizza:couponsButton')
-    #setFormField (formdata, 'goTo', 'COUPONS')
-
-    #setFormField (formdata, 'startOrder:_idcl', 'startOrder:formSubmitLink')
-    #setFormField (formdata, 'goTo', 'COUPONS')
     # Needed for me since no Domino's store delivers to me
     #setFormField (formdata, 'startOrder:deliveryOrPickup', 'Pickup')
 
-#    newpage = getPage (COUPON_PAGE_URL, formdata)
-    newpage = getPage (ADD_COUPON_URL, formdata)
+    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    newpage = getPage (next_url, formdata)
     storeClosed (newpage)
-    dumpPage (newpage)
     return newpage
 
 def getAvailableCoupons (current_page):
@@ -980,7 +992,7 @@ def getAvailableCoupons (current_page):
     parsed_page = ParseCoupons ()
     parsed_page.feed (current_page)
     parsed_page.close ()
-    return parsed_page.formdata
+    return parsed_page.form
 
 def printAvailableCoupons (coupon_data):
     """ Print the available coupon offers """
@@ -1003,7 +1015,8 @@ with a coupon offer under cron."""
 
 def addCoupon (current_page, coupon, coupon_data):
     """ Add the coupon code to the user's order """
-    formdata = getFormData (current_page, "couponsForm")
+    form = getFormData (current_page, "couponsForm")
+    formdata = form.form_data
 
     # Take the coupon_data list, place the coupon ids in a temporary list,
     # and find out if the coupon code specified is valid
@@ -1013,10 +1026,15 @@ def addCoupon (current_page, coupon, coupon_data):
     if not coupon in temp:
         raise Exception ("'%s' is not a valid coupon code." % coupon)
 
-    setFormField (formdata, 'couponsForm:userCode', coupon)
-    setFormField (formdata, 'couponsForm:_idcl', 'couponsForm:addUserCouponCP')
+    setFormField (formdata, 'couponsForm:couponCode', coupon)
+    setFormField (formdata, 'couponsForm:_idcl', 'couponsForm:addCouponLink')
+    
+#    setFormField (formdata, 'couponsForm:userCode', coupon)
+#    setFormField (formdata, 'couponsForm:_idcl', 'couponsForm:addUserCouponCP')
 
-    newpage = getPage (ADD_COUPON_URL, formdata)
+    #newpage = getPage (ADD_COUPON_URL, formdata)
+    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    newpage = getPage (next_url, formdata)
     return newpage
 
 def readConfFile ():
@@ -1190,21 +1208,19 @@ def main (argv):
     if coupon and coupon.lower() == 'x':
         # Get coupons page, print the available coupons, and exit
         page = getCouponsPage (page)
-        coupon_data = getAvailableCoupons (page)
+        coupon_form = getAvailableCoupons (page)
+        coupon_data = coupon_form.form_data
         printAvailableCoupons (coupon_data)
         sys.exit ()
     elif coupon:
         # Get coupons page, parse available coupons,
         # and add the coupon if the coupon code exists
         page = getCouponsPage (page)
-        coupon_data = getAvailableCoupons (page)
+        coupon_form = getAvailableCoupons (page)
+        coupon_data = coupon_form.form_data
         page = addCoupon (page, coupon, coupon_data)
     else:
         # Go to Step 2 section and get pizza form
-        try:
-            page = getPizzaPage (page)
-        except:
-            pass  # TODO(rnk): This page doesn't exist for me.
         page = startBuildPizza (page)
 
     # Add the specified pizza to the order
