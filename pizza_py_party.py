@@ -24,11 +24,18 @@ urllib2.install_opener (opener)
 # TODO (ryochan7): Get rid of all non-essential urls. Grab urls from the action
 #                  attribute in forms
 TEST_ROOT = "https://order.dominos.com"
-LOGIN_RELATIVE_URL = "/olo/faces/login/login.jsp"
-LOGIN_URL = urllib2.urlparse.urljoin (TEST_ROOT, LOGIN_RELATIVE_URL)
+LOGIN_URL = urllib2.urlparse.urljoin (TEST_ROOT, "/olo/faces/login/login.jsp")
+ADD_COUPON_URL = urllib2.urlparse.urljoin (TEST_ROOT, "/olo/faces/order/coupons.jsp")
+BUILD_PIZZA_URL = urllib2.urlparse.urljoin (TEST_ROOT, "/olo/faces/order/step2_choose_pizza.jsp")
+ADD_PIZZA_URL = urllib2.urlparse.urljoin (TEST_ROOT, "/olo/faces/order/step2_build_pizza.jsp")
+ADD_SIDES_URL = ADD_PIZZA_URL
+CHECKOUT_URL = urllib2.urlparse.urljoin (TEST_ROOT, "/olo/faces/order/step3_choose_drinks.jsp")
+SUBMIT_ORDER_URL = urllib2.urlparse.urljoin (TEST_ROOT, "/olo/faces/order/placeOrder.jsp")
+LOGOUT_URL = urllib2.urlparse.urljoin (TEST_ROOT, "/olo/servlet/init_servlet?target=logout")
+CALCULATE_TOTAL_URL = urllib2.urlparse.urljoin (TEST_ROOT, "/olo/servlet/ajax_servlet")
 #LOGIN_URL = "https://order.dominos.com/olo/faces/login/login.jsp"
 #LOGIN_URL = "https://www01.order.dominos.com/olo/faces/login/login.jsp"
-CALCULATE_TOTAL_URL = "https://www01.order.dominos.com/olo/servlet/ajax_servlet"
+#CALCULATE_TOTAL_URL = "https://www01.order.dominos.com/olo/servlet/ajax_servlet"
 CALCULATE_TOTAL_URL_POST_VARS = {
     "cmd": "priceOrder",
     "formName": "orderSummaryForm:",
@@ -36,8 +43,27 @@ CALCULATE_TOTAL_URL_POST_VARS = {
     "runCouponPicker": "N",
     "runPriceOrder": "Y",
 }
-SUBMIT_ORDER_URL = "https://www01.order.dominos.com/olo/faces/order/placeOrder.jsp"
-LOGOUT_URL = "http://www01.order.dominos.com/olo/servlet/init_servlet?target=logout"
+#SUBMIT_ORDER_URL = "https://www01.order.dominos.com/olo/faces/order/placeOrder.jsp"
+#LOGOUT_URL = "http://www01.order.dominos.com/olo/servlet/init_servlet?target=logout"
+
+
+#LOGIN_URL = "https://www01.order.dominos.com/olo/faces/login/login.jsp"
+#ADD_COUPON_URL = "https://www01.order.dominos.com/olo/faces/order/coupons.jsp"
+#BUILD_PIZZA_URL = "https://www01.order.dominos.com/olo/faces/order/step2_choose_pizza.jsp"
+#ADD_PIZZA_URL = "https://www01.order.dominos.com/olo/faces/order/step2_build_pizza.jsp"
+#CALCULATE_TOTAL_URL = "https://www01.order.dominos.com/olo/servlet/ajax_servlet"
+#CALCULATE_TOTAL_URL_POST_VARS = {
+#    "cmd": "priceOrder",
+#    "formName": "orderSummaryForm:",
+#    "getFreeDeliveryOffer": "N",
+#    "runCouponPicker": "N",
+#    "runPriceOrder": "Y",
+#}
+#ADD_SIDES_URL = ADD_PIZZA_URL
+#CHECKOUT_URL = "https://www01.order.dominos.com/olo/faces/order/step3_choose_drinks.jsp"
+#SUBMIT_ORDER_URL = "https://www01.order.dominos.com/olo/faces/order/placeOrder.jsp"
+#LOGOUT_URL = "http://www01.order.dominos.com/olo/servlet/init_servlet?target=logout"
+
 
 # Set User Agent
 VERSION_NUM = "0.2.2"
@@ -178,7 +204,7 @@ del toppings_cryptic
 del help_text
 
 # Dictionary used for pizza
-default_pizza = {}.fromkeys (toppings_long, ['', '1'])
+default_pizza = {}.fromkeys (toppings_long, ['N', '1'])
 default_pizza.update ({'crust': 'HANDTOSS'})
 default_pizza.update ({'size': '10'})
 default_pizza.update ({'quantity': '1'})
@@ -471,7 +497,10 @@ class Parser (htmllib.HTMLParser):
         self.getform = False
         self.select_name = None
         self.option_value = None
+#        self.formdata = {}
         self.form = BasicFormData ()
+        self.formdata = self.form.form_data
+
 
 
     def do_form (self, attrs):
@@ -508,14 +537,14 @@ class Parser (htmllib.HTMLParser):
         if name and tmp_value != None:
             # Check if a radio field needs to be updated
             if radio_field and checked:
-                self.form.form_data.update ({name: tmp_value})
+                self.formdata.update ({name: tmp_value})
             # Update non-radio fields
             elif not radio_field:
-                self.form.form_data.update ({name: tmp_value})
+                self.formdata.update ({name: tmp_value})
         # Include any input with no specified value
         # (in some needed hidden fields). Ex. login:_idcl
         elif name:
-            self.form.form_data.update ({name: tmp_value})
+            self.formdata.update ({name: ""})
 
 
     def start_select (self, attrs):
@@ -554,7 +583,7 @@ class Parser (htmllib.HTMLParser):
             self.option_value = self.last_option_value
 
         if self.select_name and self.option_value:
-            self.form.form_data.update ({self.select_name: self.option_value})
+            self.formdata.update ({self.select_name: self.option_value})
 
         # Reset these.
         self.select_name = None
@@ -719,8 +748,9 @@ def Login (current_page, username, password):
 
     print "Logging in as %s..." % username
 
-    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
-    newpage = getPage (next_url, formdata)
+    #next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    #newpage = getPage (next_url, formdata)
+    newpage = getPage (LOGIN_URL, formdata)
     checkLogin (newpage)
     return newpage
 
@@ -730,9 +760,11 @@ def startBuildPizza (current_page):
     formdata = form.form_data
 
     setFormField (formdata, 'choose_pizza:_idcl', 'choose_pizza:goToBuildOwn')
-    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
-    print next_url
-    newpage = getPage (next_url, formdata)
+    #next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    #print next_url
+    #newpage = getPage (next_url, formdata)
+    newpage = getPage (BUILD_PIZZA_URL, formdata)
+    #dumpPage (newpage)
     return newpage
 
 def addPizza (current_page, pizza, check_coupon=''):
@@ -768,12 +800,13 @@ def addPizza (current_page, pizza, check_coupon=''):
     setFormField (formdata, "builderSize", pizza.order["size"])
     setFormField (formdata, "builderQuantity", pizza.order["quantity"])
     setFormField (formdata, "build_own:_idcl", "build_own:doAdd")
-#    print formdata
+    #print formdata
 
-#    newpage = getPage (ADD_PIZZA_URL, formdata)
-    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
-    print next_url
-    newpage = getPage (next_url, formdata)
+    newpage = getPage (ADD_PIZZA_URL, formdata)
+    #next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    #print next_url
+   # newpage = getPage (next_url, formdata)
+    #dumpPage (newpage)
     return newpage
 
 def calculateTotal ():
@@ -781,6 +814,7 @@ def calculateTotal ():
         going to the confirmation page or the total cannot be obtained
         due to the use of AJAX """
     newpage = getPage (CALCULATE_TOTAL_URL, CALCULATE_TOTAL_URL_POST_VARS)
+    #dumpPage (newpage)
     a = dom.parseString (newpage)
     order_total = a.getElementsByTagName ('total')[0].firstChild.data
     return order_total
@@ -793,10 +827,10 @@ def getSidesPage (current_page, check_coupon=''):
     setFormField (formdata, 'build_own:_idcl', 'build_own:navSidesLink')
 #    print formdata
 
-#    newpage = getPage (ADD_SIDES_URL, formdata)
-    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
-    print next_url
-    newpage = getPage (next_url, formdata)
+    newpage = getPage (ADD_SIDES_URL, formdata)
+    #next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    #print next_url
+    #newpage = getPage (next_url, formdata)
     return newpage
 
 def getConfirmationPage (current_page):
@@ -805,10 +839,10 @@ def getConfirmationPage (current_page):
     formdata = form.form_data
 
     setFormField (formdata, 'orderSummaryForm:_idcl', 'orderSummaryForm:osCheckout')
-    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
-    print next_url
-    newpage = getPage (next_url, formdata)
-    #newpage = getPage (CHECKOUT_URL, formdata)
+    #next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    #print next_url
+    #newpage = getPage (next_url, formdata)
+    newpage = getPage (CHECKOUT_URL, formdata)
     return newpage
 
 def submitFinalOrder (current_page, total, check_force):
@@ -982,8 +1016,9 @@ def getCouponsPage (current_page):
     # Needed for me since no Domino's store delivers to me
     #setFormField (formdata, 'startOrder:deliveryOrPickup', 'Pickup')
 
-    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
-    newpage = getPage (next_url, formdata)
+    #next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    #newpage = getPage (next_url, formdata)
+    newpage = getPage (ADD_COUPON_URL, formdata)
     storeClosed (newpage)
     return newpage
 
@@ -1028,13 +1063,10 @@ def addCoupon (current_page, coupon, coupon_data):
 
     setFormField (formdata, 'couponsForm:couponCode', coupon)
     setFormField (formdata, 'couponsForm:_idcl', 'couponsForm:addCouponLink')
-    
-#    setFormField (formdata, 'couponsForm:userCode', coupon)
-#    setFormField (formdata, 'couponsForm:_idcl', 'couponsForm:addUserCouponCP')
 
-    #newpage = getPage (ADD_COUPON_URL, formdata)
-    next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
-    newpage = getPage (next_url, formdata)
+    newpage = getPage (ADD_COUPON_URL, formdata)
+    #next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
+    #newpage = getPage (next_url, formdata)
     return newpage
 
 def readConfFile ():
@@ -1262,3 +1294,4 @@ def main (argv):
 
 if __name__ == "__main__":
     main (sys.argv)
+
