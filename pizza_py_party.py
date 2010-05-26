@@ -497,6 +497,7 @@ class Parser (htmllib.HTMLParser):
         self.getform = False
         self.select_name = None
         self.option_value = None
+        self.first_option_value = None
 #        self.formdata = {}
         self.form = BasicFormData ()
         self.formdata = self.form.form_data
@@ -569,7 +570,9 @@ class Parser (htmllib.HTMLParser):
                 raise Exception("TODO: Support options w/o value attrs")
             self.option_value = value
 
-        self.last_option_value = value
+        if not self.first_option_value:
+            self.first_option_value = value
+        #self.last_option_value = value
 
 
     def end_select (self):
@@ -577,10 +580,11 @@ class Parser (htmllib.HTMLParser):
         if not self.getform:
             return
 
-        # If no option is selected (should not happend),
-        # make last grabbed value the selected value
+        # If no option is selected (should not happen),
+        # make first grabbed value the selected value
         if not self.option_value:
-            self.option_value = self.last_option_value
+            self.option_value = self.first_option_value
+#            self.option_value = self.last_option_value
 
         if self.select_name and self.option_value:
             self.formdata.update ({self.select_name: self.option_value})
@@ -588,7 +592,8 @@ class Parser (htmllib.HTMLParser):
         # Reset these.
         self.select_name = None
         self.option_value = None
-        self.last_option_value = None
+        self.first_option_value = None
+#        self.last_option_value = None
 
 
 ###########################################################
@@ -861,7 +866,7 @@ def submitFinalOrder (current_page, total, check_force):
         # the order is complete. Comment the getPage line below if you want
         # to test the entire program, including this function,
         # without submitting the final order
-        #newpage = getPage (SUBMIT_ORDER_URL, formdata)
+        newpage = getPage (SUBMIT_ORDER_URL, formdata)
         return True
     elif choice.lower () == 'n' or choice.lower () == 'no':
         return False
