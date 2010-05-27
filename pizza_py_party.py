@@ -106,7 +106,7 @@ toppings = ['p', 'x', 'i', 'b', 'h', 'c', 'k', 's',
 #toppingBq: toppingSideBq: toppingAmountBq: BBQ Sauce
 
 #### MEATS ####
-#toppingP: toppingSideP: toppingAmountP: Pepperoni: 
+#toppingP: toppingSideP: toppingAmountP: Pepperoni:
 #toppingPl: toppingSidePl: toppingAmountPl: Extra Large Pepperoni
 #toppingSb: toppingSideSb: toppingAmountSb: Sliced Italian Sausage
 #toppingS: toppingSideS: toppingAmountS: Italian Sausage
@@ -187,7 +187,7 @@ help_text = (
     "              With Chicken",   "         With Philly Steak",
 
     "        With Green Peppers",   "         With Black Olives",
-    "            With Pineapple",   "            With Mushrooms", 
+    "            With Pineapple",   "            With Mushrooms",
     "               With Onions",   "     With Jalapeno Peppers",
     "       With Bananan Peppers",
     "       With Cheedar Cheese",     "     With Provolone Cheese",
@@ -228,146 +228,146 @@ ORDERED_PIZZAS = 0
 
 #TODO: ABSTRACT AND SPLIT CLASS, FIX RIGID LOGIC
 class Pizza (object):
-	def __init__ (self):
-		self.crust = ""
-		self.size = ""
-		self.quantity = ""
-		self.toppings = []
-		self.order = default_pizza.copy ()
+    def __init__ (self):
+        self.crust = ""
+        self.size = ""
+        self.quantity = ""
+        self.toppings = []
+        self.order = default_pizza.copy ()
 
 
-	###########################################################
-	#                                                         #
-	#           Pizza Attributes Parsing Functions            #
-	#                                                         #
-	###########################################################
+    ###########################################################
+    #                                                         #
+    #           Pizza Attributes Parsing Functions            #
+    #                                                         #
+    ###########################################################
 
-	def setTopping (self, topping):
-		""" Add a topping to a pizza """
-		if len (topping) == 1 and topping in toppings:
-			idx = toppings.index (topping)
-			topping = toppings_long[idx]
-		elif not topping in toppings_long:
-			print >> sys.stderr, "'%s' is not a valid topping choice. Exiting." % topping
-			sys.exit (42)
-		self.order.update ({topping: ['W', '1']})
-		if not topping in self.toppings:
-			self.toppings.append (topping)
+    def setTopping (self, topping):
+        """ Add a topping to a pizza """
+        if len (topping) == 1 and topping in toppings:
+            idx = toppings.index (topping)
+            topping = toppings_long[idx]
+        elif not topping in toppings_long:
+            print >> sys.stderr, "'%s' is not a valid topping choice. Exiting." % topping
+            sys.exit (42)
+        self.order.update ({topping: ['W', '1']})
+        if not topping in self.toppings:
+            self.toppings.append (topping)
 
 
-	def setQuantity (self, quantity):
-		""" Sets the quantity of the pizza based on the quantity passed """
-		if self.quantity:
-			print >> sys.stderr, """You cannot set the quantity for the same pizza twice.
+    def setQuantity (self, quantity):
+        """ Sets the quantity of the pizza based on the quantity passed """
+        if self.quantity:
+            print >> sys.stderr, """You cannot set the quantity for the same pizza twice.
 Please check your command-line parameters. Exiting."""
-			sys.exit (42)
-		try:
-			quantity = int (quantity)
-		except ValueError:
-			print >> sys.stderr, "The input value for quantity must be an integer. Exiting."
-			sys.exit (42)
-		if quantity >= MIN_QTY and quantity <= MAX_QTY:
-			global ORDERED_PIZZAS
-			if (quantity + ORDERED_PIZZAS <= MAX_TOTAL_QTY):
-				self.order.update ({'quantity': str (quantity)})
-				self.quantity = quantity
-				ORDERED_PIZZAS += quantity
-			else:
-				print >> sys.stderr, "You cannot order more than %i pizzas. Exiting." % MAX_TOTAL_QTY
-				sys.exit (42)
-		else:
-			print >> sys.stderr, "Bad value for quantity. Quantity must be between %i and %i. Exiting." % (MIN_QTY, MAX_QTY)
-			sys.exit (42)
+            sys.exit (42)
+        try:
+            quantity = int (quantity)
+        except ValueError:
+            print >> sys.stderr, "The input value for quantity must be an integer. Exiting."
+            sys.exit (42)
+        if quantity >= MIN_QTY and quantity <= MAX_QTY:
+            global ORDERED_PIZZAS
+            if (quantity + ORDERED_PIZZAS <= MAX_TOTAL_QTY):
+                self.order.update ({'quantity': str (quantity)})
+                self.quantity = quantity
+                ORDERED_PIZZAS += quantity
+            else:
+                print >> sys.stderr, "You cannot order more than %i pizzas. Exiting." % MAX_TOTAL_QTY
+                sys.exit (42)
+        else:
+            print >> sys.stderr, "Bad value for quantity. Quantity must be between %i and %i. Exiting." % (MIN_QTY, MAX_QTY)
+            sys.exit (42)
 
 
-	def setSize (self, size):
-		""" Sets the size of the piza based on the size choice passed """
-		if self.size:
-			print >> sys.stderr, """You cannot set the size twice. Please check your command
+    def setSize (self, size):
+        """ Sets the size of the piza based on the size choice passed """
+        if self.size:
+            print >> sys.stderr, """You cannot set the size twice. Please check your command
 line parameters. Exiting."""
-			sys.exit (42)
-		if size == 'small':
-			# Deepdish pizzas cannot be small size.
-			# Will revert to medium size
-			if self.crust == 'deepdish':
-				print "Small size is not available for deepdish pizzas. Changing to medium."
-				self.order.update ({'size': '12'})
-				self.size = 'medium'
-			elif self.crust == 'brooklyn':
-				print "Small size is not available for brooklyn pizzas. Changing to large."
-				self.order.update ({'size': '14'})
-				self.size = 'large'
-			else:
-				self.order.update ({'size': '10'})
-				self.size = size
-		elif size == 'medium':
-			if self.crust == 'brooklyn':
-				print "Medium size is not available for brooklyn pizzas. Changing to large."
-				self.order.update ({'size': '14'})
-				self.size = 'large'
-			else:
-				self.order.update ({'size': '12'})
-				self.size = size
-		elif size == 'large':
-			self.order.update ({'size': '14'})
-			self.size = size
-		elif size == 'x-large':
-			# Deepdish and thin pizzas cannot be extra large size.
-			# Will revert to large size
-			if self.crust == 'deepdish':
-				print "Extra large size is not available for deepdish pizzas. Changing to large."
-				self.order.update ({'size': '14'})
-				self.size = 'large'
-			elif self.crust == 'thin':
-				print "Extra large size is not available for thin pizzas. Changing to large."
-				self.order.update ({'size': '14'})
-				self.size = 'large'
-			else:
-				self.order.update ({'size': '16'})
-				self.size = size
-		else:
-			print >> sys.stderr, "'%s' is not a valid size choice. Exiting." % size
-			sys.exit (42)
+            sys.exit (42)
+        if size == 'small':
+            # Deepdish pizzas cannot be small size.
+            # Will revert to medium size
+            if self.crust == 'deepdish':
+                print "Small size is not available for deepdish pizzas. Changing to medium."
+                self.order.update ({'size': '12'})
+                self.size = 'medium'
+            elif self.crust == 'brooklyn':
+                print "Small size is not available for brooklyn pizzas. Changing to large."
+                self.order.update ({'size': '14'})
+                self.size = 'large'
+            else:
+                self.order.update ({'size': '10'})
+                self.size = size
+        elif size == 'medium':
+            if self.crust == 'brooklyn':
+                print "Medium size is not available for brooklyn pizzas. Changing to large."
+                self.order.update ({'size': '14'})
+                self.size = 'large'
+            else:
+                self.order.update ({'size': '12'})
+                self.size = size
+        elif size == 'large':
+            self.order.update ({'size': '14'})
+            self.size = size
+        elif size == 'x-large':
+            # Deepdish and thin pizzas cannot be extra large size.
+            # Will revert to large size
+            if self.crust == 'deepdish':
+                print "Extra large size is not available for deepdish pizzas. Changing to large."
+                self.order.update ({'size': '14'})
+                self.size = 'large'
+            elif self.crust == 'thin':
+                print "Extra large size is not available for thin pizzas. Changing to large."
+                self.order.update ({'size': '14'})
+                self.size = 'large'
+            else:
+                self.order.update ({'size': '16'})
+                self.size = size
+        else:
+            print >> sys.stderr, "'%s' is not a valid size choice. Exiting." % size
+            sys.exit (42)
 
-	def setCrust (self, crust):
-		""" Sets the crust of the pizza based on the curst choice passed """
-		if self.crust:
-			print >> sys.stderr, """You cannot set the crust twice. Please check your
+    def setCrust (self, crust):
+        """ Sets the crust of the pizza based on the curst choice passed """
+        if self.crust:
+            print >> sys.stderr, """You cannot set the crust twice. Please check your
 command line parameters. Exiting."""
-			sys.exit (42)
-		if crust == 'handtoss':
-			self.order.update ({'crust': 'HANDTOSS'})
-			self.crust = crust
-		# Deepdish pizzas can only be of medium or large sizes
-		elif crust == 'deepdish':
-			if self.size == 'small':
-				print "Small size is not available for deepdish pizzas. Changing to medium."
-				self.order.update ({'size': '12'})
-				self.size = 'medium'
-			elif self.size == 'x-large':
-				print "Extra large size is not available for deepdish pizzas. Changing to large."
-				self.order.update ({'size': '14'})
-				self.size = 'large'
-			self.order.update ({'crust': 'DEEPDISH'})
-			self.crust = crust
-		elif crust == 'thin':
-			# Thin pizzas cannot be extra large size
-			if self.size == 'x-large':
-				print "Extra large size is not available for thin pizzas. Changing to large."
-				self.order.update ({'size': '14'})
-				self.size = 'large'
-			self.order.update ({'crust': 'THIN'})
-			self.crust = crust
-		elif crust == 'brooklyn':
-			if self.size == 'small' or self.size == 'medium':
-				print "The smallest available size for brooklyn pizzas is large. Changing to large."
-				self.order.update ({'size': '14'})
-				self.size = 'large'
-			self.order.update ({'crust': 'BK'})
-			self.crust = crust
-		else:
-			print >> sys.stderr, "'%s' is not a valid crust choice. Exiting."
-			sys.exit (42)
+            sys.exit (42)
+        if crust == 'handtoss':
+            self.order.update ({'crust': 'HANDTOSS'})
+            self.crust = crust
+        # Deepdish pizzas can only be of medium or large sizes
+        elif crust == 'deepdish':
+            if self.size == 'small':
+                print "Small size is not available for deepdish pizzas. Changing to medium."
+                self.order.update ({'size': '12'})
+                self.size = 'medium'
+            elif self.size == 'x-large':
+                print "Extra large size is not available for deepdish pizzas. Changing to large."
+                self.order.update ({'size': '14'})
+                self.size = 'large'
+            self.order.update ({'crust': 'DEEPDISH'})
+            self.crust = crust
+        elif crust == 'thin':
+            # Thin pizzas cannot be extra large size
+            if self.size == 'x-large':
+                print "Extra large size is not available for thin pizzas. Changing to large."
+                self.order.update ({'size': '14'})
+                self.size = 'large'
+            self.order.update ({'crust': 'THIN'})
+            self.crust = crust
+        elif crust == 'brooklyn':
+            if self.size == 'small' or self.size == 'medium':
+                print "The smallest available size for brooklyn pizzas is large. Changing to large."
+                self.order.update ({'size': '14'})
+                self.size = 'large'
+            self.order.update ({'crust': 'BK'})
+            self.crust = crust
+        else:
+            print >> sys.stderr, "'%s' is not a valid crust choice. Exiting."
+            sys.exit (42)
 
 
 class BasicFormData (object):
@@ -637,61 +637,61 @@ def setFormField (current_data, name, new_value):
     current_data.update ({name: new_value})
 
 def mergeAttributes (parsed_conf, username, password, pizza):
-	""" Merge attributes specified in the config file and any attributes
-	    specified on the command line """
-	temp_username, temp_password, temp_crust, temp_size, temp_quantity, temp_toppings = parsed_conf
-	i = 0
-	for current_item in parsed_conf:
-		if not current_item:
-			i += 1
-			continue
-		if i == 0:
-			if not username:
-				username = temp_username
-		elif i == 1:
-			if not password:
-				password = temp_password
-		elif i == 2 and current_item in crusts:
-			if not pizza.crust:
-				pizza.setCrust (current_item)
-		elif i == 3 and current_item in sizes:
-			if not pizza.size:
-				pizza.setSize (current_item)
-		elif i == 4 and int (current_item):
-			if not pizza.quantity:
-				pizza.setQuantity (current_item)
-		elif i == 5:
-			if not pizza.toppings:
-				for new_topping in temp_toppings:
-					if new_topping in toppings_long:
-						pizza.setTopping (new_topping)
-					else:
-						print >> sys.stderr, "The topping '%s' is not valid. Exiting." % new_topping
-						sys.exit (2000)						
-		else:
-			print >> sys.stderr, "The value '%s' is not valid. Exiting." % current_item
-			sys.exit (42)
-		i += 1
-	return username, password
+    """ Merge attributes specified in the config file and any attributes
+        specified on the command line """
+    temp_username, temp_password, temp_crust, temp_size, temp_quantity, temp_toppings = parsed_conf
+    i = 0
+    for current_item in parsed_conf:
+        if not current_item:
+            i += 1
+            continue
+        if i == 0:
+            if not username:
+                username = temp_username
+        elif i == 1:
+            if not password:
+                password = temp_password
+        elif i == 2 and current_item in crusts:
+            if not pizza.crust:
+                pizza.setCrust (current_item)
+        elif i == 3 and current_item in sizes:
+            if not pizza.size:
+                pizza.setSize (current_item)
+        elif i == 4 and int (current_item):
+            if not pizza.quantity:
+                pizza.setQuantity (current_item)
+        elif i == 5:
+            if not pizza.toppings:
+                for new_topping in temp_toppings:
+                    if new_topping in toppings_long:
+                        pizza.setTopping (new_topping)
+                    else:
+                        print >> sys.stderr, "The topping '%s' is not valid. Exiting." % new_topping
+                        sys.exit (2000)
+        else:
+            print >> sys.stderr, "The value '%s' is not valid. Exiting." % current_item
+            sys.exit (42)
+        i += 1
+    return username, password
 
 def findMissingAttributes (data_list):
-	""" Find the first attribute that is blank, print what the missing
-	    attribute is, and then exit """
-	index = data_list.index ('')
+    """ Find the first attribute that is blank, print what the missing
+        attribute is, and then exit """
+    index = data_list.index ('')
 
-	failed_value = ''
-	if index == 0:
-		failed_value = 'username'
-	elif index == 1:
-		failed_value = 'password'
-	elif index == 2:
-		failed_value = 'crust'
-	elif index == 3:
-		failed_value = 'size'
-	elif index == 4:
-		failed_value = 'quantity'
-	print >> sys.stderr, "A value for '%s' was not specified. Exiting." % failed_value
-	sys.exit (42)
+    failed_value = ''
+    if index == 0:
+        failed_value = 'username'
+    elif index == 1:
+        failed_value = 'password'
+    elif index == 2:
+        failed_value = 'crust'
+    elif index == 3:
+        failed_value = 'size'
+    elif index == 4:
+        failed_value = 'quantity'
+    print >> sys.stderr, "A value for '%s' was not specified. Exiting." % failed_value
+    sys.exit (42)
 
 def checkLogin (scan_page):
     """ Check whether the login was successful. Quits the program if the login
@@ -908,73 +908,73 @@ def outputOrder (pizza):
 
 
 def parseArguments (command_list, cur_pizza, skip_flags=False):
-	""" Parses any command-line arguments or arguments from a batch file """
-	username = ""
-	password = ""
-	coupon = ""
-	force = False
-	login = False
-	input_file = ""
+    """ Parses any command-line arguments or arguments from a batch file """
+    username = ""
+    password = ""
+    coupon = ""
+    force = False
+    login = False
+    input_file = ""
 
-	short_commands = "".join (toppings)
-	short_commands += "U:P:O:FLI:H"
-	long_commands = []
-	long_commands.extend (toppings_long)
-	long_commands.extend (["username=", "password=", "coupon=", "force", "input-file=", "login", "help"])
+    short_commands = "".join (toppings)
+    short_commands += "U:P:O:FLI:H"
+    long_commands = []
+    long_commands.extend (toppings_long)
+    long_commands.extend (["username=", "password=", "coupon=", "force", "input-file=", "login", "help"])
 
-	try:
-		opts, args = getopt.getopt (command_list, short_commands, long_commands)
-	except getopt.GetoptError, [msg, opt]:
-		print >> sys.stderr, "Invalid argument passed: %s" % opt
-		print >> sys.stderr, "Displaying help text and quitting"
-		displayHelp ()
-		sys.exit(42)
+    try:
+        opts, args = getopt.getopt (command_list, short_commands, long_commands)
+    except getopt.GetoptError, [msg, opt]:
+        print >> sys.stderr, "Invalid argument passed: %s" % opt
+        print >> sys.stderr, "Displaying help text and quitting"
+        displayHelp ()
+        sys.exit(42)
 
-	# Parse regular options
-	for opt, arg in opts:
-		if opt.strip ('-') in toppings:
-			topping = opt.strip ('-')
-			cur_pizza.setTopping (topping)
-		elif opt.strip ('--') in toppings_long:
-			topping = opt.strip ('--')
-			cur_pizza.setTopping (topping)
-		elif opt in ("-U", "--username"):
-			if not skip_flags:
-				username = arg
-		elif opt in ("-P", "--password"):
-			if not skip_flags:
-				password = arg
-		elif opt in ("-O", "--coupon"):
-			if not skip_flags:
-				coupon = arg
-		elif opt in ("-F", "--force"):
-			if not skip_flags:
-				force = True
-		elif opt in ("-I", "--input-file"):
-			if not skip_flags:
-				input_file = arg
-		elif opt in ("-L", "--login"):
-			if not skip_flags:
-				login = True
-		elif opt in ("-H", "--help"):
-			if not skip_flags:
-				displayHelp ()
-				sys.exit (42)
+    # Parse regular options
+    for opt, arg in opts:
+        if opt.strip ('-') in toppings:
+            topping = opt.strip ('-')
+            cur_pizza.setTopping (topping)
+        elif opt.strip ('--') in toppings_long:
+            topping = opt.strip ('--')
+            cur_pizza.setTopping (topping)
+        elif opt in ("-U", "--username"):
+            if not skip_flags:
+                username = arg
+        elif opt in ("-P", "--password"):
+            if not skip_flags:
+                password = arg
+        elif opt in ("-O", "--coupon"):
+            if not skip_flags:
+                coupon = arg
+        elif opt in ("-F", "--force"):
+            if not skip_flags:
+                force = True
+        elif opt in ("-I", "--input-file"):
+            if not skip_flags:
+                input_file = arg
+        elif opt in ("-L", "--login"):
+            if not skip_flags:
+                login = True
+        elif opt in ("-H", "--help"):
+            if not skip_flags:
+                displayHelp ()
+                sys.exit (42)
 
-	# Parse positional arguments
-	for argument in args:
-		if argument in sizes:
-			cur_pizza.setSize (argument)
-		elif argument in crusts:
-			cur_pizza.setCrust (argument)
-		elif argument.isdigit ():
-			cur_pizza.setQuantity (argument)
-		else:
-			print >> sys.stderr, "'%s' is not a valid argument. Exiting." % argument
-			sys.exit (42)
+    # Parse positional arguments
+    for argument in args:
+        if argument in sizes:
+            cur_pizza.setSize (argument)
+        elif argument in crusts:
+            cur_pizza.setCrust (argument)
+        elif argument.isdigit ():
+            cur_pizza.setQuantity (argument)
+        else:
+            print >> sys.stderr, "'%s' is not a valid argument. Exiting." % argument
+            sys.exit (42)
 
-	if not skip_flags:
-		return [username, password, coupon, force, login, input_file]
+    if not skip_flags:
+        return [username, password, coupon, force, login, input_file]
 
 
 def displayHelp ():
@@ -1075,75 +1075,75 @@ def addCoupon (current_page, coupon, coupon_data):
     return newpage
 
 def readConfFile ():
-	""" Parse the configuration file, if it exists,
-	    and return the values obtained """
-	home = os.path.expanduser("~")
-	path = os.path.join (home, ".pizza-py-party.conf")
-	default_username = ""
-	default_password = ""
-	default_quantity = ""
-	default_size = ""
-	default_crust = ""
-	default_toppings = []
-	if not os.path.isfile (path):
-		return False
-	file = open (path, 'r')
-	readline = file.readline ()
-	while readline:
-		if readline.startswith ("username="):
-			c, parsedline = readline.split ("username=")
-			default_username = parsedline.strip ()
-		elif readline.startswith ("password="):
-			c, parsedline = readline.split ("password=")
-			default_password = parsedline.strip ()
-		elif readline.startswith ("default_quantity="):
-			c, parsedline = readline.split ("default_quantity=")
-			default_quantity = parsedline.strip ()
-		elif readline.startswith ("default_size="):
-			c, parsedline = readline.split ("default_size=")
-			default_size = parsedline.strip ()
-		elif readline.startswith ("default_crust="):
-			c, parsedline = readline.split ("default_crust=")
-			default_crust = parsedline.strip ()
-		elif readline.startswith ("default_toppings="):
-			c, parsedline = readline.split ("default_toppings=")
-			parsedline = parsedline.strip ()
-			parsedline = parsedline.split ()
-			default_toppings = parsedline
-		elif readline.startswith ('#'):
-			readline = file.readline ()
-			continue
-		elif readline.strip() == '':
-			readline = file.readline ()
-			continue
-		else:
-			print >> sys.stderr, "Invalid line has been detected. \n\"%s\" \nExiting." % readline.strip()
-			sys.exit (42)
-		readline = file.readline ()
+    """ Parse the configuration file, if it exists,
+        and return the values obtained """
+    home = os.path.expanduser("~")
+    path = os.path.join (home, ".pizza-py-party.conf")
+    default_username = ""
+    default_password = ""
+    default_quantity = ""
+    default_size = ""
+    default_crust = ""
+    default_toppings = []
+    if not os.path.isfile (path):
+        return False
+    file = open (path, 'r')
+    readline = file.readline ()
+    while readline:
+        if readline.startswith ("username="):
+            c, parsedline = readline.split ("username=")
+            default_username = parsedline.strip ()
+        elif readline.startswith ("password="):
+            c, parsedline = readline.split ("password=")
+            default_password = parsedline.strip ()
+        elif readline.startswith ("default_quantity="):
+            c, parsedline = readline.split ("default_quantity=")
+            default_quantity = parsedline.strip ()
+        elif readline.startswith ("default_size="):
+            c, parsedline = readline.split ("default_size=")
+            default_size = parsedline.strip ()
+        elif readline.startswith ("default_crust="):
+            c, parsedline = readline.split ("default_crust=")
+            default_crust = parsedline.strip ()
+        elif readline.startswith ("default_toppings="):
+            c, parsedline = readline.split ("default_toppings=")
+            parsedline = parsedline.strip ()
+            parsedline = parsedline.split ()
+            default_toppings = parsedline
+        elif readline.startswith ('#'):
+            readline = file.readline ()
+            continue
+        elif readline.strip() == '':
+            readline = file.readline ()
+            continue
+        else:
+            print >> sys.stderr, "Invalid line has been detected. \n\"%s\" \nExiting." % readline.strip()
+            sys.exit (42)
+        readline = file.readline ()
 
-	return [default_username, default_password, default_crust, default_size, default_quantity, default_toppings]
+    return [default_username, default_password, default_crust, default_size, default_quantity, default_toppings]
 
 def parseBatchFile (batchfile):
-	""" Parse the specified batch file and return a list of the lines read """
-	if not os.path.isfile (batchfile):
-		print "The input file does not exist. Exiting."
-		sys.exit (42)
-	pizza_lines = []
-	file = open (batchfile, 'r')
-	readline = file.readline ()
-	while readline:
-		if readline.startswith ('#'):
-			readline = file.readline ()
-			continue
-		elif readline.strip () == '':
-			readline = file.readline ()
-			continue
-		else:
-			readline = readline.strip ()
-			newline = readline.split ()
-			pizza_lines.append (newline)
-		readline = file.readline ()
-	return pizza_lines
+    """ Parse the specified batch file and return a list of the lines read """
+    if not os.path.isfile (batchfile):
+        print "The input file does not exist. Exiting."
+        sys.exit (42)
+    pizza_lines = []
+    file = open (batchfile, 'r')
+    readline = file.readline ()
+    while readline:
+        if readline.startswith ('#'):
+            readline = file.readline ()
+            continue
+        elif readline.strip () == '':
+            readline = file.readline ()
+            continue
+        else:
+            readline = readline.strip ()
+            newline = readline.split ()
+            pizza_lines.append (newline)
+        readline = file.readline ()
+    return pizza_lines
 
 
 ###########################################################
@@ -1299,4 +1299,3 @@ def main (argv):
 
 if __name__ == "__main__":
     main (sys.argv)
-
