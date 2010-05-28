@@ -1066,7 +1066,7 @@ def addCoupon (current_page, coupon, coupon_data):
     if not coupon in temp:
         raise Exception ("'%s' is not a valid coupon code." % coupon)
 
-    setFormField (formdata, 'couponsForm:couponCode', coupon)
+    setFormField (formdata, 'couponCode', coupon)
     setFormField (formdata, 'couponsForm:_idcl', 'couponsForm:addCouponLink')
 
     newpage = getPage (ADD_COUPON_URL, formdata)
