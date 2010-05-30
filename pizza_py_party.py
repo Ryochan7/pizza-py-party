@@ -2,7 +2,7 @@
 
 import os
 import sys
-import getopt
+import optparse
 import re
 import urllib2
 import cookielib
@@ -134,8 +134,6 @@ TOPPING_CHEESE, TOPPPING_SAUSE = ("toppingC", "toppingX")
 #toppingHt: toppingSideHt: toppingAmountHt: Hot Sauce
 
 
-# TODO(rnk): Switch the topping munging code over to the Topping object
-# representation instead of using a variety of ad-hoc data structures.
 class Topping (object):
 
     """Holds information about different toppings.
@@ -151,6 +149,8 @@ class Topping (object):
         self.cryptic_name = "topping" + cryptic_code
         self.cryptic_num = "toppingSide" + cryptic_code
         self.help_name = help_name
+        # This is the destination of the topping option.
+        self.option_dest = self.long_name.replace('-', '_')
 
 
 TOPPINGS = [
@@ -640,39 +640,19 @@ def setFormField (current_data, name, new_value):
 def mergeAttributes (parsed_conf, username, password, pizza):
     """ Merge attributes specified in the config file and any attributes
         specified on the command line """
-    temp_username, temp_password, temp_crust, temp_size, temp_quantity, temp_toppings = parsed_conf
-    i = 0
-    for current_item in parsed_conf:
-        if not current_item:
-            i += 1
-            continue
-        if i == 0:
-            if not username:
-                username = temp_username
-        elif i == 1:
-            if not password:
-                password = temp_password
-        elif i == 2 and current_item in crusts:
-            if not pizza.crust:
-                pizza.setCrust (current_item)
-        elif i == 3 and current_item in sizes:
-            if not pizza.size:
-                pizza.setSize (current_item)
-        elif i == 4 and int (current_item):
-            if not pizza.quantity:
-                pizza.setQuantity (current_item)
-        elif i == 5:
-            if not pizza.toppings:
-                for new_topping in temp_toppings:
-                    if new_topping in toppings_long:
-                        pizza.addTopping (new_topping)
-                    else:
-                        print >> sys.stderr, "The topping '%s' is not valid. Exiting." % new_topping
-                        sys.exit (2000)
-        else:
-            print >> sys.stderr, "The value '%s' is not valid. Exiting." % current_item
-            sys.exit (42)
-        i += 1
+    if not username:
+        username = parsed_conf["username"]
+    if not password:
+        password = parsed_conf["password"]
+    if not pizza.crust:
+        pizza.setCrust(parsed_conf["default_crust"])
+    if not pizza.size:
+        pizza.setSize (parsed_conf["default_size"])
+    if not pizza.quantity:
+        pizza.setQuantity (parsed_conf["default_quantity"])
+    if not pizza.toppings:
+        for new_topping in parsed_conf["default_toppings"]:
+            pizza.addTopping (new_topping)
     return username, password
 
 def findMissingAttributes (data_list):
@@ -863,7 +843,7 @@ def submitFinalOrder (current_page, total, check_force):
         # the order is complete. Comment the getPage line below if you want
         # to test the entire program, including this function,
         # without submitting the final order
-        newpage = getPage (SUBMIT_ORDER_URL, formdata)
+        #newpage = getPage (SUBMIT_ORDER_URL, formdata)
         return True
     elif choice.lower () == 'n' or choice.lower () == 'no':
         return False
@@ -905,59 +885,67 @@ def outputOrder (pizza):
             print "and %s..." % topping_name
 
 
+VERSION_STR = "Pizza Py Party %s" % VERSION_NUM
+
+USAGE = """\
+%%prog [OPTIONS] [TOPPINGS] [QUANTITY] [SIZE] [CRUST]
+
+%(VERSION_STR)s
+
+QUANTITY can be between %(MIN_QTY)s and %(MAX_QTY)s.
+No more than %(MAX_TOTAL_QTY)s pizzas can be ordered.
+
+SIZE can be: small, medium, large, or x-large.
+Note: small is not available for deepdish or brooklyn.
+      medium is not available for brooklyn
+      x-large is not available for deepdish, thin.
+
+CRUST can be: handtoss, deepdish, thin, or brooklyn.
+
+Example: `pizza-py-party -pmd 2 medium thin` orders 2 medium, thin pizzas with
+pepperoni, mushrooms, and cheedar cheese.
+
+See the man page for more details on accounts, configuration files, and batch
+ordering.
+""" % globals()
+
+
 def parseArguments (command_list, cur_pizza, skip_flags=False):
-    """ Parses any command-line arguments or arguments from a batch file """
-    username = ""
-    password = ""
-    coupon = ""
-    force = False
-    login = False
-    input_file = ""
+    formatter = optparse.IndentedHelpFormatter (max_help_position=30)
+    parser = optparse.OptionParser (usage=USAGE, version=VERSION_STR,
+                                    add_help_option=False, formatter=formatter)
 
-    short_commands = "".join (toppings_short)
-    short_commands += "U:P:O:FLI:H"
-    long_commands = []
-    long_commands.extend (toppings_long)
-    long_commands.extend (["username=", "password=", "coupon=", "force", "input-file=", "login", "help"])
+    if not skip_flags:
+        parser.add_option ("-U", "--username", help="Specify your user name")
+        parser.add_option ("-P", "--password", help="Specify your password")
+        parser.add_option ("-O", "--coupon", default="", help="Specify an "
+                           "online coupon. Input x to see the coupon menu")
+        parser.add_option ("-F", "--force", action="store_true",
+                           help="Order the pizza with no user confirmation")
+        parser.add_option ("-L", "--login", action="store_true",
+                           help="Specify login information within the "
+                           "program as opposed to using the command "
+                           "line arguments")
+        parser.add_option ("-I", "--input-file", help="Input file to read "
+                           "batch of pizza (see man page for info)")
+        parser.add_option ("-H", "--help", action="help",
+                           help="Display help text")
 
-    try:
-        opts, args = getopt.getopt (command_list, short_commands, long_commands)
-    except getopt.GetoptError, [msg, opt]:
-        print >> sys.stderr, "Invalid argument passed: %s" % opt
-        print >> sys.stderr, "Displaying help text and quitting"
-        displayHelp ()
-        sys.exit(42)
+    topping_opts = optparse.OptionGroup(parser, "Topping options")
+    for topping in TOPPINGS:
+        short = "-" + topping.short_name
+        long = "--" + topping.long_name
+        topping_opts.add_option (short, long, dest=topping.option_dest,
+                                 action="store_true", help=topping.help_name)
+    parser.add_option_group(topping_opts)
 
-    # Parse regular options
-    for opt, arg in opts:
-        if opt.strip ('-') in toppings_short:
-            topping = opt.strip ('-')
-            cur_pizza.addTopping (topping)
-        elif opt.strip ('--') in toppings_long:
-            topping = opt.strip ('--')
-            cur_pizza.addTopping (topping)
-        elif opt in ("-U", "--username"):
-            if not skip_flags:
-                username = arg
-        elif opt in ("-P", "--password"):
-            if not skip_flags:
-                password = arg
-        elif opt in ("-O", "--coupon"):
-            if not skip_flags:
-                coupon = arg
-        elif opt in ("-F", "--force"):
-            if not skip_flags:
-                force = True
-        elif opt in ("-I", "--input-file"):
-            if not skip_flags:
-                input_file = arg
-        elif opt in ("-L", "--login"):
-            if not skip_flags:
-                login = True
-        elif opt in ("-H", "--help"):
-            if not skip_flags:
-                displayHelp ()
-                sys.exit (42)
+    (options, args) = parser.parse_args(command_list)
+
+    # For each topping, check if the option was set.  If so, add it to the
+    # pizza.
+    for topping in TOPPINGS:
+        if getattr(options, topping.option_dest):
+            cur_pizza.addTopping(topping)
 
     # Parse positional arguments
     for argument in args:
@@ -971,47 +959,9 @@ def parseArguments (command_list, cur_pizza, skip_flags=False):
             print >> sys.stderr, "'%s' is not a valid argument. Exiting." % argument
             sys.exit (42)
 
-    if not skip_flags:
-        return [username, password, coupon, force, login, input_file]
+    return [options.username, options.password, options.coupon, options.force,
+            options.login, options.input_file]
 
-
-def displayHelp ():
-    """ Print the help menu """
-    print
-    print "Pizza Py Party %s" % VERSION_NUM
-    print "Usage: pizza-py-party [OPTIONS] [TOPPINGS] [QUANTITY] [SIZE] [CRUST]"
-    print
-    print "QUANTITY can be between %s and %s. No more than %s pizzas can be ordered." % (MIN_QTY, MAX_QTY, MAX_TOTAL_QTY)
-    print "SIZE can be: small, medium, large, or x-large."
-    print "Note: small is not available for deepdish or brooklyn."
-    print "      medium is not available for brooklyn"
-    print "      x-large is not available for deepdish, thin."
-    print "CRUST can be: handtoss, deepdish, thin, or brooklyn."
-    print
-    print "Example: `pizza-py-party -pmd 2 medium thin` orders 2 medium,\nthin pizzas with pepperoni, mushrooms, and cheedar cheese."
-    print
-    print "Options are:"
-    print "  -U, --username <USERNAME>        Specify your user name"
-    print "  -P, --password <PASSWORD>        Specify your password"
-    print "  -O, --coupon   <ID# | x>         Specify an online coupon. Input x to \n",
-    print "                                   see the coupon menu"
-    print "  -F, --force                      Order the pizza with no user confirmation"
-    print "  -I, --input-file <BATCHFILE>     Input file to read batch of pizza\n",
-    print "                                   (see man page for info)"
-    print "  -L, --login                      Specify login information within the \n",
-    print "                                   program as opposed to using the command \n",
-    print "                                   line arguments"
-    print "  -H, --help                       Display help text"
-    print
-    print "Toppings are:"
-    for topping in TOPPINGS:
-        print "  -%(short)s, --%(long)s %(help)s" % {
-            'short': topping.short_name,
-            'long': topping.long_name,
-            'help': topping.help_text,
-        }
-    print
-    print "See the man page for more details on accounts, configuration files,\nand batch ordering.\n"
 
 def getCouponsPage (current_page):
     """ Gets the coupon page """
@@ -1075,76 +1025,51 @@ def addCoupon (current_page, coupon, coupon_data):
     #newpage = getPage (next_url, formdata)
     return newpage
 
+def filter_comments_and_blanks_and_strip (lines):
+    """Filter comment lines and blanks from lines in a text file."""
+    for line in lines:
+        line = line.strip ()
+        if line.startswith ('#'):
+            continue
+        if not line:
+            continue
+        yield line
+
 def readConfFile ():
     """ Parse the configuration file, if it exists,
         and return the values obtained """
-    home = os.path.expanduser("~")
+    home = os.path.expanduser ("~")
     path = os.path.join (home, ".pizza-py-party.conf")
-    default_username = ""
-    default_password = ""
-    default_quantity = ""
-    default_size = ""
-    default_crust = ""
-    default_toppings = []
     if not os.path.isfile (path):
         return False
-    file = open (path, 'r')
-    readline = file.readline ()
-    while readline:
-        if readline.startswith ("username="):
-            c, parsedline = readline.split ("username=")
-            default_username = parsedline.strip ()
-        elif readline.startswith ("password="):
-            c, parsedline = readline.split ("password=")
-            default_password = parsedline.strip ()
-        elif readline.startswith ("default_quantity="):
-            c, parsedline = readline.split ("default_quantity=")
-            default_quantity = parsedline.strip ()
-        elif readline.startswith ("default_size="):
-            c, parsedline = readline.split ("default_size=")
-            default_size = parsedline.strip ()
-        elif readline.startswith ("default_crust="):
-            c, parsedline = readline.split ("default_crust=")
-            default_crust = parsedline.strip ()
-        elif readline.startswith ("default_toppings="):
-            c, parsedline = readline.split ("default_toppings=")
-            parsedline = parsedline.strip ()
-            parsedline = parsedline.split ()
-            default_toppings = parsedline
-        elif readline.startswith ('#'):
-            readline = file.readline ()
-            continue
-        elif readline.strip() == '':
-            readline = file.readline ()
-            continue
-        else:
-            print >> sys.stderr, "Invalid line has been detected. \n\"%s\" \nExiting." % readline.strip()
-            sys.exit (42)
-        readline = file.readline ()
 
-    return [default_username, default_password, default_crust, default_size, default_quantity, default_toppings]
+    defaults = dict.fromkeys (["username", "password", "default_quantity",
+                               "default_size", "default_crust",
+                               "default_toppings"], "")
+
+    with open (path, 'r') as conf_file:
+        for line in filter_comments_and_blanks_and_strip (conf_file):
+            parts = line.split('=', 2)
+            if len (parts) == 2 and parts[0] in defaults:
+                (key, value) = parts
+                defaults[key] = value
+            else:
+                print >> sys.stderr, ("Invalid line has been detected.\n"
+                                      "\"%s\"\nExiting.") % line.strip()
+                sys.exit (42)
+
+    # Toppings should be a space-separated list.  Make it a Pythonn list.
+    defaults["default_toppings"] = defaults["default_toppings"].split ()
+
+    return defaults
 
 def parseBatchFile (batchfile):
     """ Parse the specified batch file and return a list of the lines read """
     if not os.path.isfile (batchfile):
         print "The input file does not exist. Exiting."
         sys.exit (42)
-    pizza_lines = []
-    file = open (batchfile, 'r')
-    readline = file.readline ()
-    while readline:
-        if readline.startswith ('#'):
-            readline = file.readline ()
-            continue
-        elif readline.strip () == '':
-            readline = file.readline ()
-            continue
-        else:
-            readline = readline.strip ()
-            newline = readline.split ()
-            pizza_lines.append (newline)
-        readline = file.readline ()
-    return pizza_lines
+    with open (batchfile, 'r') as file:
+        return [l.split() for l in strip_and_filter_comments_and_blanks (file)]
 
 
 ###########################################################
@@ -1161,7 +1086,8 @@ def main (argv):
     pizza = Pizza ()
 
     # Parse command-line arguments
-    username, password, coupon, force, login, input_file = parseArguments (argv[1:], pizza)
+    username, password, coupon, force, login, input_file = \
+            parseArguments (argv[1:], pizza)
 
     # If a pizza was defined in the command-line arguments, add it to the pizza
     # list. Else, delete the initial Pizza object
