@@ -73,8 +73,8 @@ USER_AGENT = {'User-agent' : 'PizzaPyParty/%s' % __version__}
 # Lists with default pizza attributes. Used when parsing pizza options passed
 sizes = ("small", "medium", "large", "x-large")
 crusts = ("handtoss", "deepdish", "thin", "brooklyn")
-TOPPING_CHEESE, TOPPPING_SAUSE = ("toppingC", "toppingX")
-#TOPPING_CHEESE, TOPPPING_SAUSE = ("topping-#-C-#-", "topping-#-X-#-")
+TOPPING_CHEESE, TOPPPING_SAUCE = ("toppingC", "toppingX")
+#TOPPING_CHEESE, TOPPPING_SAUCE = ("topping-#-C-#-", "topping-#-X-#-")
 
 ###################################
 ####                           ####
@@ -169,7 +169,7 @@ TOPPINGS = [
     Topping ("o", "onions",           "O",  "Onions"),
     Topping ("j", "jalapeno-peppers", "J",  "Jalapeno Peppers"),
     Topping ("e", "banana-peppers",   "Z",  "Bananan Peppers"),
-    Topping ("d", "cheedar-cheese",   "E",  "Cheedar Cheese"),
+    Topping ("d", "cheddar-cheese",   "E",  "Cheddar Cheese"),
     Topping ("n", "provolone-cheese", "Cp", "Provolone Cheese"),
     Topping ("v", "green-olives",     "V",  "Green Olives"),
     Topping ("t", "tomatoes",         "Td", "Diced Tomatoes"),
@@ -191,7 +191,7 @@ help_text = (
     "            With Pineapple",   "            With Mushrooms",
     "               With Onions",   "     With Jalapeno Peppers",
     "       With Bananan Peppers",
-    "       With Cheedar Cheese",     "     With Provolone Cheese",
+    "       With Cheddar Cheese",     "     With Provolone Cheese",
     "         With Green Olives", "             With Diced Tomatoes",)
 
 # Hack to associate the aligned help text with the topping.
@@ -758,8 +758,8 @@ def addPizza (current_page, pizza, check_coupon=''):
     topping_re = re.compile (r"topping(?!Side|Amount).*")
     temp_topping_keys = [t.cryptic_name for t in TOPPINGS]
     for key, value in formdata_temp.iteritems ():
-        # If key is cheese or sause, skip
-        if key == TOPPING_CHEESE or key == TOPPPING_SAUSE:
+        # If key is cheese or sauce, skip
+        if key == TOPPING_CHEESE or key == TOPPPING_SAUCE:
             continue
         elif topping_re.match (key) and key not in temp_topping_keys:
             del formdata[key]
@@ -902,7 +902,7 @@ Note: small is not available for deepdish or brooklyn.
 CRUST can be: handtoss, deepdish, thin, or brooklyn.
 
 Example: `pizza-py-party -pmd 2 medium thin` orders 2 medium, thin pizzas with
-pepperoni, mushrooms, and cheedar cheese.
+pepperoni, mushrooms, and cheddar cheese.
 
 See the man page for more details on accounts, configuration files, and batch
 ordering.
