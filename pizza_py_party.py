@@ -75,8 +75,6 @@ sizes = ("small", "medium", "large", "x-large")
 crusts = ("handtoss", "deepdish", "thin", "brooklyn")
 TOPPING_CHEESE, TOPPPING_SAUSE = ("toppingC", "toppingX")
 #TOPPING_CHEESE, TOPPPING_SAUSE = ("topping-#-C-#-", "topping-#-X-#-")
-toppings = ['p', 'x', 'i', 'b', 'h', 'c', 'k', 's',
-    'g', 'l', 'a', 'm', 'o', 'j', 'e', 'd', 'n', 'v', 't']
 
 ###################################
 ####                           ####
@@ -136,77 +134,15 @@ toppings = ['p', 'x', 'i', 'b', 'h', 'c', 'k', 's',
 #toppingHt: toppingSideHt: toppingAmountHt: Hot Sauce
 
 
-toppings_long = [
-    "pepperoni",
-    "xlarge-pepperoni",
-    "italian-sausage",
-    "beef",
-    "ham",
-    "bacon",
-    "chicken",
-    "philly-steak",
-    "green-peppers",
-    "black-olives",
-    "pineapple",
-    "mushrooms",
-    "onions",
-    "jalapeno-peppers",
-    "banana-peppers",
-    "cheedar-cheese",
-    "provolone-cheese",
-    "green-olives",
-    "tomatoes",
-]
-
-toppings_cryptic = {
-    "pepperoni":        "P",
-    "xlarge-pepperoni": "Pl",
-    "italian-sausage":  "S",
-    "beef":             "B",
-    "ham":              "H",
-    "bacon":            "K",
-    "chicken":          "Du",
-    "philly-steak":     "Pm",
-    "green-peppers":    "G",
-    "black-olives":     "R",
-    "pineapple":        "N",
-    "mushrooms":        "M",
-    "onions":           "O",
-    "jalapeno-peppers": "J",
-    "banana-peppers":   "Z",
-    "cheedar-cheese":   "E",
-    "provolone-cheese": "Cp",
-    "green-olives":     "V",
-    "tomatoes":         "Td",
-}
-
-help_text = (
-    "            With Pepperoni",   "     With Extra Large Pepperoni",
-    "      With Italian Sausage",   "                 With Beef",
-    "                  With Ham",   "                With Bacon",
-    "              With Chicken",   "         With Philly Steak",
-
-    "        With Green Peppers",   "         With Black Olives",
-    "            With Pineapple",   "            With Mushrooms",
-    "               With Onions",   "     With Jalapeno Peppers",
-    "       With Bananan Peppers",
-    "       With Cheedar Cheese",     "     With Provolone Cheese",
-    "         With Green Olives", "             With Diced Tomatoes",)
-toppings_dict = {}
-for i, topping in enumerate (toppings_long):
-    toppings_dict.update ({topping: {
-        'short': toppings[i],
-        'long': topping, 'help_text': help_text[i],
-        'cryptic_name': "topping%s" % toppings_cryptic[topping],
-        'cryptic_num': "toppingSide%s" % toppings_cryptic[topping]}}
-    )
-
-
 # TODO(rnk): Switch the topping munging code over to the Topping object
 # representation instead of using a variety of ad-hoc data structures.
 class Topping (object):
 
-    """Holds information about different toppings."""
+    """Holds information about different toppings.
+
+    This class uses reference equality, so these objects should not be copied
+    or reconstructed.
+    """
 
     def __init__ (self, short_name, long_name, cryptic_code, help_name):
         self.short_name = short_name
@@ -217,7 +153,7 @@ class Topping (object):
         self.help_name = help_name
 
 
-topping_objs = [
+TOPPINGS = [
     Topping ("p", "pepperoni",        "P",  "Pepperoni"),
     Topping ("x", "xlarge-pepperoni", "Pl", "Extra Large Pepperoni"),
     Topping ("i", "italian-sausage",  "S",  "Italian Sausage"),
@@ -240,7 +176,30 @@ topping_objs = [
 ]
 
 
-del toppings_cryptic
+# Old-style ad-hoc topping data structures.
+toppings_short = [t.short_name for t in TOPPINGS]
+toppings_long = [t.long_name for t in TOPPINGS]
+short2topping = dict([(t.short_name, t) for t in TOPPINGS])
+long2topping = dict([(t.long_name, t) for t in TOPPINGS])
+
+help_text = (
+    "            With Pepperoni",   "     With Extra Large Pepperoni",
+    "      With Italian Sausage",   "                 With Beef",
+    "                  With Ham",   "                With Bacon",
+    "              With Chicken",   "         With Philly Steak",
+
+    "        With Green Peppers",   "         With Black Olives",
+    "            With Pineapple",   "            With Mushrooms",
+    "               With Onions",   "     With Jalapeno Peppers",
+    "       With Bananan Peppers",
+    "       With Cheedar Cheese",     "     With Provolone Cheese",
+    "         With Green Olives", "             With Diced Tomatoes",)
+
+# Hack to associate the aligned help text with the topping.
+for i, topping in enumerate (TOPPINGS):
+    topping.help_text = help_text[i]
+
+
 del help_text
 
 # Dictionary used for pizza
@@ -273,7 +232,7 @@ class Pizza (object):
         self.crust = ""
         self.size = ""
         self.quantity = ""
-        self.toppings = []
+        self.toppings = set()
         self.order = default_pizza.copy ()
 
 
@@ -285,15 +244,16 @@ class Pizza (object):
 
     def addTopping (self, topping):
         """ Add a topping to a pizza """
-        if len (topping) == 1 and topping in toppings:
-            idx = toppings.index (topping)
-            topping = toppings_long[idx]
-        elif not topping in toppings_long:
-            print >> sys.stderr, "'%s' is not a valid topping choice. Exiting." % topping
-            sys.exit (42)
-        self.order.update ({topping: ['W', '1']})
-        if not topping in self.toppings:
-            self.toppings.append (topping)
+        if not isinstance(topping, Topping):
+            if topping in short2topping:
+                topping = short2topping[topping]
+            elif topping in long2topping:
+                topping = long2topping[topping]
+            else:
+                print >> sys.stderr, "'%s' is not a valid topping choice. Exiting." % topping
+                sys.exit (42)
+        self.order[topping.long_name] = ['W', '1']
+        self.toppings.add (topping)
 
 
     def setQuantity (self, quantity):
@@ -817,7 +777,7 @@ def addPizza (current_page, pizza, check_coupon=''):
     # Delete any unknown toppings
     formdata_temp = formdata.copy ()
     topping_re = re.compile (r"topping(?!Side|Amount).*")
-    temp_topping_keys = [value["cryptic_name"] for key, value in toppings_dict.iteritems ()]
+    temp_topping_keys = [t.cryptic_name for t in TOPPINGS]
     for key, value in formdata_temp.iteritems ():
         # If key is cheese or sause, skip
         if key == TOPPING_CHEESE or key == TOPPPING_SAUSE:
@@ -826,17 +786,16 @@ def addPizza (current_page, pizza, check_coupon=''):
             del formdata[key]
     del formdata_temp
 
-    for i, topping in enumerate (toppings_long):
-        if pizza.order[topping][0] != "N":
-            # Check that topping exists in pizza form
-            if toppings_dict[topping]["cryptic_name"] not in formdata:
-                raise Exception ("Selected topping \"%s\" (%s) does not exist in form.\nCurrent form: %s" % (topping, toppings_dict[topping]["cryptic_name"], formdata))
-
-            setFormField (formdata, toppings_dict[topping]["cryptic_num"], pizza.order[topping][0]) # Fill field with topping settings
+    for topping in TOPPINGS:
+        if topping in pizza.toppings:
+            # Fill field with topping settings.
+            setFormField (formdata, topping.cryptic_num,
+                          pizza.order[topping.long_name][0])
         else:
             # Unused toppings must be removed from form data
-            topping_field = toppings_dict[topping]["cryptic_name"]
-            if topping_field in formdata: del formdata[topping_field]
+            topping_field = topping.cryptic_name
+            if topping_field in formdata:
+                del formdata[topping_field]
 
     setFormField (formdata, "builderCrust", pizza.order["crust"])
     setFormField (formdata, "builderSize", pizza.order["size"])
@@ -847,7 +806,7 @@ def addPizza (current_page, pizza, check_coupon=''):
     newpage = getPage (ADD_PIZZA_URL, formdata)
     #next_url = urllib2.urlparse.urljoin (TEST_ROOT, form.form_action)
     #print next_url
-   # newpage = getPage (next_url, formdata)
+    #newpage = getPage (next_url, formdata)
     #dumpPage (newpage)
     return newpage
 
@@ -885,6 +844,7 @@ def getConfirmationPage (current_page):
     #print next_url
     #newpage = getPage (next_url, formdata)
     newpage = getPage (CHECKOUT_URL, formdata)
+    #dumpPage (newpage)
     return newpage
 
 def submitFinalOrder (current_page, total, check_force):
@@ -931,17 +891,18 @@ def outputOrder (pizza):
         print "pizza..."
 
     for i, topping in enumerate (pizza.toppings):
-        topping = topping.replace ('-', ' ') # Use space when printing topping name
+        # Use space when printing topping name
+        topping_name = topping.long_name.replace ('-', ' ')
 
         if length > 2 and (length - i) >= 2:
-            print "%s," % topping,
+            print "%s," % topping_name,
         elif length == 1:
-            print "%s..." % topping
+            print "%s..." % topping_name
         # Used to print first of two toppings
         elif (length - i) == 2:
-            print "%s" % topping,
+            print "%s" % topping_name,
         else:
-            print "and %s..." % topping
+            print "and %s..." % topping_name
 
 
 def parseArguments (command_list, cur_pizza, skip_flags=False):
@@ -953,7 +914,7 @@ def parseArguments (command_list, cur_pizza, skip_flags=False):
     login = False
     input_file = ""
 
-    short_commands = "".join (toppings)
+    short_commands = "".join (toppings_short)
     short_commands += "U:P:O:FLI:H"
     long_commands = []
     long_commands.extend (toppings_long)
@@ -969,7 +930,7 @@ def parseArguments (command_list, cur_pizza, skip_flags=False):
 
     # Parse regular options
     for opt, arg in opts:
-        if opt.strip ('-') in toppings:
+        if opt.strip ('-') in toppings_short:
             topping = opt.strip ('-')
             cur_pizza.addTopping (topping)
         elif opt.strip ('--') in toppings_long:
@@ -1043,9 +1004,12 @@ def displayHelp ():
     print "  -H, --help                       Display help text"
     print
     print "Toppings are:"
-    for topping in toppings_long:
-        current = toppings_dict[topping]
-        print "  -%(short)s, --%(long)s %(help)s" % {'short': current['short'], 'long': current['long'], 'help': current['help_text']}
+    for topping in TOPPINGS:
+        print "  -%(short)s, --%(long)s %(help)s" % {
+            'short': topping.short_name,
+            'long': topping.long_name,
+            'help': topping.help_text,
+        }
     print
     print "See the man page for more details on accounts, configuration files,\nand batch ordering.\n"
 
