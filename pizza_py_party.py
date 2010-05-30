@@ -66,8 +66,8 @@ CALCULATE_TOTAL_URL_POST_VARS = {
 
 
 # Set User Agent
-VERSION_NUM = "0.2.2"
-USER_AGENT = {'User-agent' : 'PizzaPyParty/%s' % VERSION_NUM}
+__version__ = "0.2.2"
+USER_AGENT = {'User-agent' : 'PizzaPyParty/%s' % __version__}
 
 # TODO (ryochan7): Organize toppings data strutures in a better manner
 # Lists with default pizza attributes. Used when parsing pizza options passed
@@ -177,7 +177,6 @@ TOPPINGS = [
 
 
 # Old-style ad-hoc topping data structures.
-toppings_short = [t.short_name for t in TOPPINGS]
 toppings_long = [t.long_name for t in TOPPINGS]
 short2topping = dict([(t.short_name, t) for t in TOPPINGS])
 long2topping = dict([(t.long_name, t) for t in TOPPINGS])
@@ -843,7 +842,7 @@ def submitFinalOrder (current_page, total, check_force):
         # the order is complete. Comment the getPage line below if you want
         # to test the entire program, including this function,
         # without submitting the final order
-        #newpage = getPage (SUBMIT_ORDER_URL, formdata)
+        newpage = getPage (SUBMIT_ORDER_URL, formdata)
         return True
     elif choice.lower () == 'n' or choice.lower () == 'no':
         return False
@@ -885,7 +884,7 @@ def outputOrder (pizza):
             print "and %s..." % topping_name
 
 
-VERSION_STR = "Pizza Py Party %s" % VERSION_NUM
+VERSION_STR = "Pizza Py Party %s" % __version__
 
 USAGE = """\
 %%prog [OPTIONS] [TOPPINGS] [QUANTITY] [SIZE] [CRUST]
