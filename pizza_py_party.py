@@ -200,6 +200,46 @@ for i, topping in enumerate (toppings_long):
         'cryptic_name': "topping%s" % toppings_cryptic[topping],
         'cryptic_num': "toppingSide%s" % toppings_cryptic[topping]}}
     )
+
+
+# TODO(rnk): Switch the topping munging code over to the Topping object
+# representation instead of using a variety of ad-hoc data structures.
+class Topping (object):
+
+    """Holds information about different toppings."""
+
+    def __init__ (self, short_name, long_name, cryptic_code, help_name):
+        self.short_name = short_name
+        self.long_name = long_name
+        self.cryptic_code = cryptic_code
+        self.cryptic_name = "topping" + cryptic_code
+        self.cryptic_num = "toppingSide" + cryptic_code
+        self.help_name = help_name
+
+
+topping_objs = [
+    Topping ("p", "pepperoni",        "P",  "Pepperoni"),
+    Topping ("x", "xlarge-pepperoni", "Pl", "Extra Large Pepperoni"),
+    Topping ("i", "italian-sausage",  "S",  "Italian Sausage"),
+    Topping ("b", "beef",             "B",  "Beef"),
+    Topping ("h", "ham",              "H",  "Ham"),
+    Topping ("c", "bacon",            "K",  "Bacon"),
+    Topping ("k", "chicken",          "Du", "Chicken"),
+    Topping ("s", "philly-steak",     "Pm", "Philly Steak"),
+    Topping ("g", "green-peppers",    "G",  "Green Peppers"),
+    Topping ("l", "black-olives",     "R",  "Black Olives"),
+    Topping ("a", "pineapple",        "N",  "Pineapple"),
+    Topping ("m", "mushrooms",        "M",  "Mushrooms"),
+    Topping ("o", "onions",           "O",  "Onions"),
+    Topping ("j", "jalapeno-peppers", "J",  "Jalapeno Peppers"),
+    Topping ("e", "banana-peppers",   "Z",  "Bananan Peppers"),
+    Topping ("d", "cheedar-cheese",   "E",  "Cheedar Cheese"),
+    Topping ("n", "provolone-cheese", "Cp", "Provolone Cheese"),
+    Topping ("v", "green-olives",     "V",  "Green Olives"),
+    Topping ("t", "tomatoes",         "Td", "Diced Tomatoes"),
+]
+
+
 del toppings_cryptic
 del help_text
 
@@ -228,6 +268,7 @@ ORDERED_PIZZAS = 0
 
 #TODO: ABSTRACT AND SPLIT CLASS, FIX RIGID LOGIC
 class Pizza (object):
+
     def __init__ (self):
         self.crust = ""
         self.size = ""
@@ -242,7 +283,7 @@ class Pizza (object):
     #                                                         #
     ###########################################################
 
-    def setTopping (self, topping):
+    def addTopping (self, topping):
         """ Add a topping to a pizza """
         if len (topping) == 1 and topping in toppings:
             idx = toppings.index (topping)
@@ -664,7 +705,7 @@ def mergeAttributes (parsed_conf, username, password, pizza):
             if not pizza.toppings:
                 for new_topping in temp_toppings:
                     if new_topping in toppings_long:
-                        pizza.setTopping (new_topping)
+                        pizza.addTopping (new_topping)
                     else:
                         print >> sys.stderr, "The topping '%s' is not valid. Exiting." % new_topping
                         sys.exit (2000)
@@ -714,12 +755,8 @@ def storeClosed (scan_page):
     return False
 
 def dumpPage (page):
-    page_out = None
     with open('dumped_page.html', 'w') as page_out:
         page_out.write(page)
-
-    if page_out:
-        page_out.close ()
 
 
 #####################################################################
@@ -866,7 +903,7 @@ def submitFinalOrder (current_page, total, check_force):
         # the order is complete. Comment the getPage line below if you want
         # to test the entire program, including this function,
         # without submitting the final order
-        newpage = getPage (SUBMIT_ORDER_URL, formdata)
+        #newpage = getPage (SUBMIT_ORDER_URL, formdata)
         return True
     elif choice.lower () == 'n' or choice.lower () == 'no':
         return False
@@ -934,10 +971,10 @@ def parseArguments (command_list, cur_pizza, skip_flags=False):
     for opt, arg in opts:
         if opt.strip ('-') in toppings:
             topping = opt.strip ('-')
-            cur_pizza.setTopping (topping)
+            cur_pizza.addTopping (topping)
         elif opt.strip ('--') in toppings_long:
             topping = opt.strip ('--')
-            cur_pizza.setTopping (topping)
+            cur_pizza.addTopping (topping)
         elif opt in ("-U", "--username"):
             if not skip_flags:
                 username = arg
