@@ -7,7 +7,7 @@ import re
 import urllib2
 import cookielib
 from xml.dom import minidom as dom
-import htmllib
+import htmllib_adapter as htmllib
 import formatter
 from urllib import urlencode
 from getpass import getpass
@@ -384,9 +384,9 @@ class CouponCodeData (object):
 
 class ParseCoupons (htmllib.HTMLParser):
     """ Parser for the coupons page. Obtains all available coupon offers """
-    def __init__(self, verbose=False):
+    def __init__(self):
         f = formatter.NullFormatter ()
-        htmllib.HTMLParser.__init__ (self, f, verbose)
+        htmllib.HTMLParser.__init__ (self)
         self.in_coupon_menu = False
         self.in_ul = False
         self.getcoupon = False
@@ -492,7 +492,7 @@ class Parser (htmllib.HTMLParser):
     """ Generic parser used to parse the pages and obtain the form data """
     def __init__(self, form_id, verbose=False):
         f = formatter.NullFormatter ()
-        htmllib.HTMLParser.__init__ (self, f, verbose)
+        htmllib.HTMLParser.__init__ (self)
         self.form_id = form_id
         self.getform = False
         self.select_name = None
@@ -532,7 +532,7 @@ class Parser (htmllib.HTMLParser):
                 tmp_value = value
             if item == "type" and value == "radio":
                 radio_field = True
-            elif item == "checked" and radio_field:
+            elif item == "checked":
                 checked = True
 
         if name and tmp_value != None:
@@ -602,6 +602,11 @@ class Parser (htmllib.HTMLParser):
 #                                                         #
 ###########################################################
 
+def pretty_print(d):
+    """Pretty print a dictionary."""
+    return "{\n%s\n}" % "\n".join("    %r: %r," % (k, v)
+                                  for k, v in sorted(d.items()))
+
 def getPage (url, data=None):
     """ Generic function that makes requests for pages """
     if data != None:
@@ -632,7 +637,9 @@ def setFormField (current_data, name, new_value):
     """ Check that a particular entry exists in the form data
         and updates the entry with the value passed """
     if not name in current_data:
-        raise Exception ("Necessary item \"%s\" was not found in the form.\nCurrent form data: %s" % (name, current_data))
+        raise Exception ("Necessary item \"%s\" was not found in the form.\n"
+                         "Current form data: %s" %
+                         (name, pretty_print(current_data)))
 
     current_data.update ({name: new_value})
 
